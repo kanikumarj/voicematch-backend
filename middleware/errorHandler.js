@@ -1,6 +1,6 @@
 'use strict';
 
-const { captureException } = require('../config/sentry');
+
 
 function asyncHandler(fn) {
   return (req, res, next) => {
@@ -26,7 +26,7 @@ function globalErrorHandler(err, _req, res, _next) {
 
   // Report unexpected errors to Sentry (not app-level validation errors)
   if (status === 500) {
-    captureException(err);
+    console.error('[InternalError]', err);
   }
 
   if (process.env.NODE_ENV === 'production') {

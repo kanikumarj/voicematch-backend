@@ -2,7 +2,7 @@
 
 const db    = require('../../db');
 const redis = require('../../db/redis');
-const { captureException } = require('../../config/sentry');
+
 
 // ─── Lua: atomic report count check + soft ban trigger guard ─────────────────
 // Returns 1 if threshold crossed for the first time (prevents double-trigger)
@@ -53,7 +53,7 @@ async function createReport(reporterId, reportedId, sessionId, reason, detail) {
     if (err.message?.includes('NOSCRIPT')) {
       reportThresholdSha = null;  // Reload on next call
     }
-    captureException(err, { context: 'createReport.thresholdCheck' });
+    console.error('[createReport.thresholdCheck]', err);
   }
 }
 

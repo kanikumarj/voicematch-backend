@@ -1,5 +1,5 @@
 import axios from 'axios';
-import * as Sentry from '@sentry/react';
+
 
 /**
  * src/lib/api.js
@@ -36,15 +36,7 @@ api.interceptors.response.use(
       window.dispatchEvent(new Event('auth:logout'));
     }
 
-    if (status >= 500) {
-      Sentry.captureException(err, {
-        extra: {
-          url:    err.config?.url,
-          method: err.config?.method,
-          status,
-        },
-      });
-    }
+
 
     // Preserve the server error message for UI display
     const message = err.response?.data?.message
