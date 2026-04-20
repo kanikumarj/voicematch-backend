@@ -1,0 +1,127 @@
+.pcf-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  animation: fadeIn 0.3s ease;
+}
+
+.pcf-card {
+  background: rgba(20, 20, 40, 0.98);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px;
+  padding: 36px 32px;
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+  animation: slideUp 0.4s ease;
+  font-family: 'Inter', sans-serif;
+}
+
+.pcf-title { font-size: 1.3rem; font-weight: 700; color: #e8e8f0; }
+.pcf-sub   { font-size: 0.88rem; color: #7070a0; }
+
+/* ── Stars ── */
+.pcf-stars { display: flex; gap: 6px; }
+.pcf-star {
+  background: none;
+  border: none;
+  font-size: 2.2rem;
+  color: rgba(255,255,255,0.15);
+  cursor: pointer;
+  transition: color 0.15s, transform 0.1s;
+  line-height: 1;
+  padding: 2px;
+}
+.pcf-star.active { color: #f7c06a; }
+.pcf-star:hover  { transform: scale(1.15); }
+
+/* ── Report toggle ── */
+.pcf-report-toggle {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  color: #9090b0;
+  font-size: 0.82rem;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+}
+.pcf-report-toggle.active  { border-color: #f76a6a; color: #f76a6a; }
+.pcf-report-toggle:hover   { background: rgba(255,255,255,0.05); }
+
+/* ── Report form ── */
+.pcf-report-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: slideDown 0.25s ease;
+}
+
+.pcf-select, .pcf-detail {
+  width: 100%;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: #e8e8f0;
+  font-size: 0.88rem;
+  font-family: inherit;
+  outline: none;
+  resize: vertical;
+}
+.pcf-select:focus, .pcf-detail:focus { border-color: #7c6af7; }
+.pcf-select option { background: #1a1a2e; }
+.pcf-detail { min-height: 70px; }
+
+/* ── Buttons ── */
+.pcf-btn {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #7c6af7, #48b0f7);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pcf-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.pcf-skip {
+  background: transparent;
+  border: none;
+  color: #6060a0;
+  font-size: 0.82rem;
+  cursor: pointer;
+  padding: 4px;
+}
+.pcf-skip:hover { color: #9090b0; }
+
+.btn-spinner {
+  display: inline-block;
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes spin    { to { transform: rotate(360deg); } }

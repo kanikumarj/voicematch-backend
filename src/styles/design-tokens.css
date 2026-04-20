@@ -1,0 +1,121 @@
+/* ============================================================
+   DESIGN TOKENS — VoiceMatch
+   ============================================================ */
+
+/* ── DARK MODE (default) ─────────────────────────────────── */
+:root,
+html.dark {
+  --bg-primary      : #0A0A0A;
+  --bg-secondary    : #141414;
+  --bg-tertiary     : #1E1E1E;
+  --bg-elevated     : #242424;
+
+  --accent-primary  : #7C3AED;
+  --accent-secondary: #6D28D9;
+  --accent-glow     : rgba(124,58,237,0.15);
+
+  --text-primary    : #F9FAFB;
+  --text-secondary  : #9CA3AF;
+  --text-muted      : #6B7280;
+
+  --border-subtle   : rgba(255,255,255,0.06);
+  --border-default  : rgba(255,255,255,0.10);
+
+  --success         : #10B981;
+  --warning         : #F59E0B;
+  --error           : #EF4444;
+  --info            : #3B82F6;
+
+  --online-dot      : #22C55E;
+  --offline-dot     : #4B5563;
+  --incall-dot      : #7C3AED;
+
+  /* Bubble colors */
+  --bubble-own-bg   : var(--accent-primary);
+  --bubble-own-text : #FFFFFF;
+  --bubble-friend-bg: var(--bg-tertiary);
+  --bubble-friend-text: var(--text-primary);
+}
+
+/* ── LIGHT MODE ──────────────────────────────────────────── */
+html.light {
+  --bg-primary      : #FFFFFF;
+  --bg-secondary    : #F3F4F6;
+  --bg-tertiary     : #E5E7EB;
+  --bg-elevated     : #FFFFFF;
+
+  --accent-primary  : #7C3AED;
+  --accent-secondary: #6D28D9;
+  --accent-glow     : rgba(124,58,237,0.10);
+
+  --text-primary    : #111827;
+  --text-secondary  : #6B7280;
+  --text-muted      : #9CA3AF;
+
+  --border-subtle   : rgba(0,0,0,0.06);
+  --border-default  : rgba(0,0,0,0.10);
+
+  --success         : #059669;
+  --warning         : #D97706;
+  --error           : #DC2626;
+  --info            : #2563EB;
+
+  --online-dot      : #16A34A;
+  --offline-dot     : #9CA3AF;
+  --incall-dot      : #7C3AED;
+
+  --bubble-own-bg   : var(--accent-primary);
+  --bubble-own-text : #FFFFFF;
+  --bubble-friend-bg: #E5E7EB;
+  --bubble-friend-text: #111827;
+}
+
+/* ── TYPOGRAPHY ──────────────────────────────────────────── */
+:root {
+  --text-xs   : 11px;
+  --text-sm   : 13px;
+  --text-base : 15px;
+  --text-md   : 17px;
+  --text-lg   : 20px;
+  --text-xl   : 24px;
+  --text-2xl  : 30px;
+
+  /* ── SPACING (8px base) ── */
+  --space-1  : 4px;
+  --space-2  : 8px;
+  --space-3  : 12px;
+  --space-4  : 16px;
+  --space-5  : 20px;
+  --space-6  : 24px;
+  --space-8  : 32px;
+  --space-10 : 40px;
+
+  /* ── BORDER RADIUS ── */
+  --radius-sm  : 8px;
+  --radius-md  : 12px;
+  --radius-lg  : 16px;
+  --radius-xl  : 20px;
+  --radius-full: 9999px;
+
+  /* ── ELEVATION ── */
+  --shadow-sm  : 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md  : 0 4px 16px rgba(0,0,0,0.4);
+  --shadow-lg  : 0 8px 32px rgba(0,0,0,0.5);
+  --glow-accent: 0 0 20px rgba(124,58,237,0.3);
+
+  /* ── ANIMATION ── */
+  --fast   : 120ms;
+  --normal : 220ms;
+  --slow   : 350ms;
+  --spring : cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease   : cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ── SAFE AREA ── */
+  --safe-top    : env(safe-area-inset-top, 0px);
+  --safe-bottom : env(safe-area-inset-bottom, 0px);
+  --safe-left   : env(safe-area-inset-left, 0px);
+  --safe-right  : env(safe-area-inset-right, 0px);
+
+  /* ── BOTTOM NAV HEIGHT ── */
+  --bottom-nav-height: 72px;
+}

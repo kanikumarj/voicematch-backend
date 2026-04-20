@@ -1,0 +1,114 @@
+/* ============================================================
+   ANIMATIONS — VoiceMatch
+   ============================================================ */
+
+/* ── Pulse Ring (searching / status) ──────────────────────── */
+@keyframes pulse-ring {
+  0%   { transform: scale(1);   opacity: 0.8; }
+  70%  { transform: scale(1.6); opacity: 0;   }
+  100% { transform: scale(1.6); opacity: 0;   }
+}
+
+@keyframes pulse-ring-2 {
+  0%   { transform: scale(1);   opacity: 0.6; }
+  70%  { transform: scale(2);   opacity: 0;   }
+  100% { transform: scale(2);   opacity: 0;   }
+}
+
+/* ── Shimmer (skeleton) ───────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px  0; }
+}
+
+/* ── Slide Up (bottom sheet / modals) ─────────────────────── */
+@keyframes slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+@keyframes slide-down {
+  from { transform: translateY(0);    opacity: 1; }
+  to   { transform: translateY(100%); opacity: 0; }
+}
+
+/* ── Fade in ─────────────────────────────────────────────── */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+@keyframes fade-in-fast {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Bounce Dot (typing indicator) ───────────────────────── */
+@keyframes bounce-dot {
+  0%, 60%, 100% { transform: translateY(0);    }
+  30%           { transform: translateY(-6px); }
+}
+
+/* ── Wave Bar (audio visualizer) ─────────────────────────── */
+@keyframes wave-bar {
+  0%, 100% { transform: scaleY(0.3); }
+  50%      { transform: scaleY(1);   }
+}
+
+/* ── Spin Ring (loading) ─────────────────────────────────── */
+@keyframes spin-ring {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Toast Slide In ──────────────────────────────────────── */
+@keyframes toast-in {
+  from { transform: translateY(-100%) scale(0.9); opacity: 0; }
+  to   { transform: translateY(0)     scale(1);   opacity: 1; }
+}
+
+@keyframes toast-out {
+  from { transform: translateY(0)     scale(1);   opacity: 1; max-height: 80px; }
+  to   { transform: translateY(-30px) scale(0.9); opacity: 0; max-height: 0;    }
+}
+
+/* ── Progress Bar ────────────────────────────────────────── */
+@keyframes progress-shrink {
+  from { width: 100%; }
+  to   { width: 0%;   }
+}
+
+/* ── Radar Rings (searching) ─────────────────────────────── */
+@keyframes radar {
+  0%   { transform: translate(-50%, -50%) scale(0.5); opacity: 1;   }
+  100% { transform: translate(-50%, -50%) scale(3);   opacity: 0;   }
+}
+
+/* ── Scale Pop (avatar appear) ───────────────────────────── */
+@keyframes scale-pop {
+  0%   { transform: scale(0.8); opacity: 0; }
+  60%  { transform: scale(1.05); }
+  100% { transform: scale(1);   opacity: 1; }
+}
+
+/* ── Pulsing Glow ────────────────────────────────────────── */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 var(--accent-glow); }
+  50%      { box-shadow: 0 0 0 12px transparent; }
+}
+
+/* ── Utility animation classes ───────────────────────────── */
+.anim-fade-in       { animation: fade-in var(--normal) var(--ease) both; }
+.anim-slide-up      { animation: slide-up var(--normal) var(--spring) both; }
+.anim-scale-pop     { animation: scale-pop var(--slow) var(--spring) both; }
+.anim-pulse-glow    { animation: pulse-glow 2s ease-in-out infinite; }
+
+/* ── Reduce Motion ───────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration:        0.01ms !important;
+    animation-iteration-count: 1      !important;
+    transition-duration:       0.01ms !important;
+  }
+}

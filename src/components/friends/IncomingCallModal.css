@@ -1,0 +1,107 @@
+.incoming-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(10,10,10,0.96);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fade-in-fast var(--fast) var(--ease) both;
+}
+
+/* Pulsing background rings */
+.incoming-rings {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1.5px solid rgba(124,58,237,0.3);
+  animation: pulse-ring 2.5s ease-out infinite;
+  width: 200px;
+  height: 200px;
+}
+
+.ring-2 { animation-delay: 0.8s; }
+.ring-3 { animation-delay: 1.6s; }
+
+.incoming-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  text-align: center;
+  padding: var(--space-8);
+  z-index: 1;
+}
+
+.incoming-avatar {
+  animation: scale-pop var(--slow) var(--spring) both;
+}
+
+.incoming-label {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.incoming-name {
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.incoming-btns {
+  display: flex;
+  gap: var(--space-10);
+  margin-top: var(--space-4);
+}
+
+.incoming-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  transition: transform var(--fast) var(--spring), box-shadow var(--fast) var(--ease);
+}
+
+.incoming-btn span {
+  position: absolute;
+  bottom: -24px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.incoming-btn { position: relative; }
+
+.incoming-btn.reject {
+  background: var(--error);
+  color: #fff;
+  box-shadow: 0 4px 24px rgba(239,68,68,0.4);
+}
+
+.incoming-btn.accept {
+  background: var(--success);
+  color: #fff;
+  box-shadow: 0 4px 24px rgba(34,197,94,0.4);
+  animation: pulse-glow 1.5s ease-in-out infinite;
+}
+
+.incoming-btn:hover { transform: scale(1.1); }
+.incoming-btn:active { transform: scale(0.95); }

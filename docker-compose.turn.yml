@@ -1,0 +1,38 @@
+# Coturn TURN server — self-hosted via Docker
+# Usage: docker-compose -f docker-compose.turn.yml up -d
+
+version: '3.8'
+
+services:
+  coturn:
+    image: coturn/coturn:latest
+    restart: unless-stopped
+    network_mode: host          # Required — TURN needs real source IP visibility
+    volumes:
+      - ./coturn/turnserver.conf:/etc/coturn/turnserver.conf:ro
+    environment:
+      # These are passed through to the config file via envsubst in entrypoint
+      - TURN_SECRET=${TURN_SECRET}
+      - TURN_REALM=${TURN_REALM:-voicematch.local}
+
+# ─── coturn/turnserver.conf ────────────────────────────────────────────────────
+# Create this file alongside the compose file:
+#
+#   listening-port=3478
+#   tls-listening-port=5349
+#   fingerprint
+#   lt-cred-mech
+#   use-auth-secret
+#   static-auth-secret=${TURN_SECRET}
+#   realm=${TURN_REALM}
+#   total-quota=100
+#   bps-capacity=0
+#   stale-nonce=600
+#   no-multicast-peers
+#   no-stdout-log
+#   log-file=/var/log/coturn/turnserver.log
+#
+# ─── Env vars needed in .env ──────────────────────────────────────────────────
+#   TURN_SECRET=<strong-random-secret>     # same value used by backend HMAC
+#   TURN_REALM=voicematch.local            # or your domain
+#   TURN_URL=turn:<your-server-ip>:3478    # used by backend call.controller.js

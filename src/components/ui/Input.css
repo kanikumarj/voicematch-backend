@@ -1,0 +1,88 @@
+.input-wrapper {
+  position: relative;
+  display:  flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.input-field {
+  width: 100%;
+  background: var(--bg-tertiary);
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 18px var(--space-4) 6px;
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color var(--fast) var(--ease),
+              box-shadow    var(--fast) var(--ease);
+  min-height: 52px;
+}
+
+.input-field::placeholder { color: transparent; }
+
+.input-field:focus {
+  border-color: var(--accent-primary);
+  box-shadow:   0 0 0 3px var(--accent-glow);
+}
+
+/* Floating label */
+.input-label {
+  position: absolute;
+  left: var(--space-4);
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: var(--text-base);
+  color: var(--text-muted);
+  pointer-events: none;
+  transition: top var(--fast) var(--ease),
+              font-size var(--fast) var(--ease),
+              color var(--fast) var(--ease);
+  transform-origin: left center;
+}
+
+/* Lift label when focused or has value */
+.input-field:focus ~ .input-label,
+.input-field:not(:placeholder-shown) ~ .input-label {
+  top: 10px;
+  font-size: var(--text-xs);
+  color: var(--accent-primary);
+  transform: none;
+}
+
+/* Icon helpers */
+.has-icon-left  { padding-left: 40px; }
+.has-icon-right { padding-right: 44px; }
+
+.input-icon-left,
+.input-icon-right {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.input-icon-left  { left:  var(--space-3); }
+.input-icon-right { right: var(--space-3); width: 32px; height: 32px; border-radius: 50%; cursor: pointer; }
+.input-icon-right:hover { background: var(--bg-elevated); }
+
+/* Error */
+.has-error .input-field {
+  border-color: var(--error);
+}
+
+.input-error {
+  font-size: var(--text-xs);
+  color: var(--error);
+  margin-top: var(--space-1);
+  padding-left: var(--space-4);
+}
+
+/* Search type — no floating label needed */
+input[type="search"]::-webkit-search-cancel-button { display: none; }

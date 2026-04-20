@@ -1,0 +1,63 @@
+.avatar {
+  position: relative;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: visible;
+  transition: transform var(--fast) var(--ease);
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.avatar-initials {
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ── Status ring ─────────────────────────────────────────── */
+.avatar.status-online {
+  box-shadow: 0 0 0 2.5px var(--bg-primary), 0 0 0 4.5px var(--online-dot);
+}
+
+.avatar.status-in_call {
+  box-shadow: 0 0 0 2.5px var(--bg-primary), 0 0 0 4.5px var(--incall-dot);
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.avatar.status-searching {
+  box-shadow: 0 0 0 2.5px var(--bg-primary), 0 0 0 4.5px var(--warning);
+  animation: pulse-glow 1.5s ease-in-out infinite;
+}
+
+/* ── Status Dot (small indicator bottom-right) ──────────── */
+.avatar-status-dot {
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--bg-primary);
+}
+
+.dot-online    { background: var(--online-dot); }
+.dot-offline   { background: var(--offline-dot); }
+.dot-in_call   { background: var(--incall-dot); animation: pulse-glow 2s ease-in-out infinite; }
+.dot-searching { background: var(--warning);   animation: pulse-glow 1.5s ease-in-out infinite; }
+
+/* ── Sizes ── */
+.avatar-sm  { font-size: 11px; }
+.avatar-md  { font-size: 16px; }
+.avatar-lg  { font-size: 20px; }
+.avatar-xl  { font-size: 28px; }

@@ -1,0 +1,87 @@
+.toast-container {
+  position: fixed;
+  top: max(var(--space-4), var(--safe-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  pointer-events: none;
+  width: min(360px, 92vw);
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  box-shadow: var(--shadow-lg);
+  pointer-events: all;
+  position: relative;
+  overflow: hidden;
+  animation: toast-in var(--fast) var(--ease) both;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.toast-icon {
+  font-size: 15px;
+  font-weight: 700;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.toast-message {
+  flex: 1;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.toast-close {
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 4px;
+  border-radius: 50%;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.toast-close:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+
+/* Color variants */
+.toast-success .toast-icon { color: var(--success); }
+.toast-error   .toast-icon { color: var(--error);   }
+.toast-warning .toast-icon { color: var(--warning); }
+.toast-info    .toast-icon { color: var(--info);    }
+
+.toast-success { border-left: 3px solid var(--success); }
+.toast-error   { border-left: 3px solid var(--error);   }
+.toast-warning { border-left: 3px solid var(--warning); }
+.toast-info    { border-left: 3px solid var(--info);    }
+
+/* Progress bar */
+.toast-progress {
+  position: absolute;
+  bottom: 0; left: 0;
+  height: 2px;
+  background: currentColor;
+  opacity: 0.3;
+  animation: progress-shrink 4s linear forwards;
+}
+
+@media (min-width: 768px) {
+  .toast-container {
+    left: auto;
+    right: var(--space-4);
+    transform: none;
+  }
+}

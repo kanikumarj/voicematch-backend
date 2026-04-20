@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+    <meta name="description" content="VoiceMatch — Connect with strangers by voice, make friends, and chat in real-time." />
+
+    <!-- PWA / Mobile -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="VoiceMatch" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- Theme color -->
+    <meta name="theme-color" content="#7C3AED" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#7C3AED" media="(prefers-color-scheme: light)" />
+
+    <!-- Icons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+    <title>VoiceMatch — Connect by Voice</title>
+
+    <!-- Prevent FOUC for dark theme -->
+    <script>
+      (function() {
+        var t = localStorage.getItem('vm_theme');
+        if (t === 'light') { document.documentElement.className = 'light'; }
+        else if (t === 'system' || !t) {
+          if (window.matchMedia('(prefers-color-scheme: light)').matches) {
+            document.documentElement.className = 'light';
+          }
+        }
+      })();
+    </script>
+    <script type="module" crossorigin src="/assets/index-CYEOIMfm.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-S-ySWqyJ.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-HpqodDWC.js">
+    <link rel="modulepreload" crossorigin href="/assets/socket-M2gbpy5o.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-KE9fRSOi.css">
+  <link rel="manifest" href="/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/registerSW.js"></script></head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

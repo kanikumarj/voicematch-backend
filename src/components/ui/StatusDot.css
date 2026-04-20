@@ -1,0 +1,12 @@
+.status-dot {
+  display: inline-block;
+  width:  9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 2px solid var(--bg-primary);
+}
+
+.status-online    { background: var(--online-dot); }
+.status-offline   { background: var(--offline-dot); }
+.status-in_call   { background: var(--incall-dot); animation: pulse-glow 2s ease-in-out infinite; }
+.status-searching { background: var(--warning);   animation: pulse-glow 1.5s ease-in-out infinite; }
