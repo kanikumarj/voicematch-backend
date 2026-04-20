@@ -15,7 +15,7 @@ if (process.env.NODE_ENV !== 'development') {
   process.exit(1);
 }
 
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const db     = require('./index');
 
 const USERS = [

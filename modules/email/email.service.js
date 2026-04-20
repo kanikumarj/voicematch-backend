@@ -254,7 +254,7 @@ async function resetPassword(token, newPassword) {
     throw Object.assign(new Error('Reset link has expired or already been used'), { code: 'TOKEN_INVALID' });
   }
 
-  const bcrypt = require('bcrypt');
+  const bcrypt = require('bcryptjs');
   const hash   = await bcrypt.hash(newPassword, 12);
   await db.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, userId]);
 }
