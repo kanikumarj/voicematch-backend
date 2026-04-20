@@ -1,64 +1,45 @@
-'use strict';
+const rateLimit = require('express-rate-limit')
 
-const rateLimit = require('express-rate-limit');
-const { ipKeyGenerator } = require('express-rate-limit');
-const RedisStore = require('rate-limit-redis').default;
-const redis = require('../db/redis');
+// FIXED: Removed rate-limit-redis — Upstash doesn't support
+// SCRIPT command. Using memory store instead (sufficient for MVP).
 
-/**
- * Factory: creates a rate limiter middleware with a Redis backing store.
- * Falls back to in-memory store if Redis is unavailable (graceful degradation).
- */
-function createLimiter({ windowMs, max, prefix, message }) {
-  let store;
-  try {
-    store = new RedisStore({
-      sendCommand: (...args) => redis.call(...args),
-      prefix,
-    });
-  } catch {
-    process.stderr.write(`[RATE LIMIT] Redis store init failed for ${prefix} — using memory store\n`);
-    store = undefined;
-  }
-
+const createLimiter = (options = {}) => {
   return rateLimit({
-    windowMs,
-    max,
+    windowMs: options.windowMs || 15 * 60 * 1000, // 15 min default
+    max: options.max || 100,
     standardHeaders: true,
-    legacyHeaders:   false,
-    store,
-    keyGenerator: (req) => {
-      // Authenticated users keyed by userId; guests keyed by IPv4/IPv6-safe IP
-      return req.user?.id || ipKeyGenerator(req);
+    legacyHeaders: false,
+    message: {
+      success: false,
+      message: options.message || 'Too many requests, please try again later.'
     },
-    handler: (_req, res) => {
-      res.status(429).json({ error: message });
-    },
-    skip: (req) => req.path === '/health',
-  });
+    skip: (req) => process.env.NODE_ENV === 'development'
+  })
 }
 
-// ─── Pre-configured limiters ──────────────────────────────────────────────────
-
+// Auth limiter — strict
 const authLimiter = createLimiter({
   windowMs: 15 * 60 * 1000,
-  max:      10,
-  prefix:   'rl:auth:',
-  message:  'Too many attempts. Please wait 15 minutes before trying again.',
-});
+  max: 20,
+  message: 'Too many auth attempts, please try again in 15 minutes.'
+})
 
+// General API limiter
+const apiLimiter = createLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 200
+})
+
+// Socket / call limiter — relaxed
+const callLimiter = createLimiter({
+  windowMs: 60 * 1000,
+  max: 60
+})
+
+// Added poolJoinLimiter back so it doesn't break any routes that might use it
 const poolJoinLimiter = createLimiter({
   windowMs: 60 * 1000,
-  max:      20,
-  prefix:   'rl:pool:',
-  message:  'Too many queue requests. Please slow down.',
-});
+  max: 20
+})
 
-const apiLimiter = createLimiter({
-  windowMs: 60 * 1000,
-  max:      120,
-  prefix:   'rl:api:',
-  message:  'Too many requests.',
-});
-
-module.exports = { authLimiter, poolJoinLimiter, apiLimiter, createLimiter };
+module.exports = { authLimiter, apiLimiter, callLimiter, poolJoinLimiter, createLimiter }
