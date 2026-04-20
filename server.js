@@ -1,8 +1,7 @@
 'use strict';
 
-// ─── Sentry MUST be initialised before any other requires ────────────────────
-const { initSentry } = require('./config/sentry');
-initSentry();
+// ─── Sentry removed for production stability ──────────────────────────────
+
 
 require('dotenv').config();
 

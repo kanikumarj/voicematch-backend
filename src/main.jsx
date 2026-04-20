@@ -1,29 +1,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import * as Sentry from '@sentry/react';
 import App from './App';
 import { AuthProvider } from './context/AuthContext';
+import ErrorBoundary from './components/ErrorBoundary';
 import './styles/globals.css';
 
-// ─── Sentry ────────────────────────────────────────────────────────────────
-const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN;
-
-if (SENTRY_DSN) {
-  Sentry.init({
-    dsn:              SENTRY_DSN,
-    environment:      import.meta.env.MODE,
-    tracesSampleRate: import.meta.env.MODE === 'production' ? 0.1 : 0,
-    ignoreErrors: [
-      'ResizeObserver loop limit exceeded',
-      'Non-Error promise rejection captured',
-      /^Network Error$/,
-    ],
-  });
-}
-
 window.addEventListener('unhandledrejection', (event) => {
-  if (SENTRY_DSN) Sentry.captureException(event.reason);
-  else console.error('[UnhandledRejection]', event.reason);
+  console.error('[UnhandledRejection]', event.reason);
 });
 
 // ─── Mount ────────────────────────────────────────────────────────────────
@@ -52,10 +35,10 @@ const FallbackUI = () => (
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <Sentry.ErrorBoundary fallback={<FallbackUI />}>
+    <ErrorBoundary fallback={<FallbackUI />}>
       <AuthProvider>
         <App />
       </AuthProvider>
-    </Sentry.ErrorBoundary>
+    </ErrorBoundary>
   </React.StrictMode>,
 );
