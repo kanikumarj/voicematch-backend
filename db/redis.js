@@ -2,11 +2,7 @@
 
 const Redis = require('ioredis');
 
-if (!process.env.REDIS_URL) {
-  throw new Error('REDIS_URL environment variable is not set');
-}
-
-const redis = new Redis(process.env.REDIS_URL, {
+const redis = process.env.REDIS_URL ? new Redis(process.env.REDIS_URL, {
   maxRetriesPerRequest:    3,
   enableReadyCheck:        true,
   lazyConnect:             false,
@@ -15,10 +11,12 @@ const redis = new Redis(process.env.REDIS_URL, {
     const delay = Math.min(times * 200, 30_000);
     return delay;
   },
-});
+}) : null;
 
-redis.on('error',       (err) => process.stderr.write(`[REDIS] Error: ${err.message}\n`));
-redis.on('reconnecting',()    => process.stderr.write('[REDIS] Reconnecting...\n'));
-redis.on('ready',       ()    => process.stdout.write('[REDIS] Connected\n'));
+if (redis) {
+  redis.on('error',       (err) => process.stderr.write(`[REDIS] Error: ${err.message}\n`));
+  redis.on('reconnecting',()    => process.stderr.write('[REDIS] Reconnecting...\n'));
+  redis.on('ready',       ()    => process.stdout.write('[REDIS] Connected\n'));
+}
 
 module.exports = redis;
