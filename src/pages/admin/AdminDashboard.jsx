@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import './AdminDashboard.css';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const API = import.meta.env.VITE_API_URL;
 const RANGES = ['24h', '7d', '30d'];
 const PIE_COLORS = ['#7c6af7', '#48b0f7', '#f76a6a', '#f7c06a'];
 

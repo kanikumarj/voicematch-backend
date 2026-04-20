@@ -10,7 +10,7 @@ import { useToast } from '../components/ui/Toast';
 import CallScreen from '../modules/call/CallScreen';
 import './DashboardPage.css';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const API = import.meta.env.VITE_API_URL;
 
 function getGreeting() {
   const h = new Date().getHours();

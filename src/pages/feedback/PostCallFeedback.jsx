@@ -9,7 +9,7 @@ const REASONS = [
   { value: 'other',        label: 'Other' },
 ];
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const API = import.meta.env.VITE_API_URL;
 
 export default function PostCallFeedback({ sessionId, partnerId, partnerName, token, onDone }) {
   const [rating,       setRating]       = useState(0);

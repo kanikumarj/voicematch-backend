@@ -5,7 +5,7 @@ import CallScreen           from '../../modules/call/CallScreen';
 import { toast }            from '../../components/ui/Toast';
 import './MatchScreen.css';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const API = import.meta.env.VITE_API_URL;
 
 // ─── States ───────────────────────────────────────────────────────────────────
 //  idle → searching → matched → connected → ended → idle

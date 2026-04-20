@@ -11,7 +11,7 @@ import { SkeletonChatItem } from '../../components/ui/Skeleton';
 import { useToast } from '../../components/ui/Toast';
 import './FriendsPage.css';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const API = import.meta.env.VITE_API_URL;
 
 function timeAgo(dateStr) {
   if (!dateStr) return '';

@@ -3,7 +3,7 @@ import StreakBadge from '../../components/ui/StreakBadge';
 import { toast }  from '../../components/ui/Toast';
 import './ProfilePage.css';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const API = import.meta.env.VITE_API_URL;
 
 const GENDER_OPTIONS = [
   { value: 'any',    label: 'Any' },

@@ -8,7 +8,7 @@ import { useToast } from '../../components/ui/Toast';
 import { useKeyboard } from '../../hooks/useKeyboard';
 import './ChatPage.css';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const API = import.meta.env.VITE_API_URL;
 
 function isSameDay(a, b) {
   return new Date(a).toDateString() === new Date(b).toDateString();
