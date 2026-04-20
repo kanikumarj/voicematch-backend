@@ -30,26 +30,17 @@ app.use(helmet({
 }));
 
 // ─── Global middleware ────────────────────────────────────────────────────────
-const corsOptions = {
-  origin: function (origin, callback) {
-    const allowed = [
-      'https://voicematcho.netlify.app',
-      'http://localhost:3000',
-      'http://localhost:5173',
-      'http://localhost:4000'
-    ];
-    if (!origin) return callback(null, true);
-    if (allowed.includes(origin)) return callback(null, true);
-    return callback(new Error('CORS blocked: ' + origin));
-  },
+app.use(cors({
+  origin: 'https://voicematcho.netlify.app',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  optionsSuccessStatus: 204
-};
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
+app.options('*', cors({
+  origin: 'https://voicematcho.netlify.app',
+  credentials: true
+}));
 app.use(express.json({ limit: '16kb' }));
 app.use(apiLimiter);
 
@@ -63,6 +54,10 @@ app.use('/api/friends',  require('./modules/friends/friends.routes'));
 app.use('/api/chat',     require('./modules/chat/chat.routes'));
 
 // ─── Health check ─────────────────────────────────────────────────────────────
+app.get('/', (req, res) => {
+  res.json({ status: 'ok', service: 'VoiceMatch API' });
+});
+
 app.get('/health', (_req, res) => res.json({
   status:    'ok',
   timestamp: new Date().toISOString(),
