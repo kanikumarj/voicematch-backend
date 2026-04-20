@@ -14,13 +14,25 @@ async function registerController(req, res) {
     const result = await registerUser(req.body);
     return res.status(201).json(result);
   } catch (err) {
+    // FIXED: Log full error for debugging in Render/local
+    console.error('[AUTH REGISTER ERROR]', {
+      message: err.message,
+      code: err.code,
+      detail: err.detail,
+      stack: err.stack
+    });
+
     if (err.code === 'VALIDATION_ERROR') {
       return res.status(422).json({ error: err.message });
     }
     if (err.code === 'EMAIL_EXISTS') {
       return res.status(409).json({ error: err.message });
     }
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ 
+      success: false,
+      message: 'Internal server error',
+      debug: process.env.NODE_ENV !== 'production' ? err.message : undefined
+    });
   }
 }
 

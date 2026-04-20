@@ -12,16 +12,19 @@ const isLocal = process.env.DATABASE_URL.includes('localhost') || process.env.DA
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  max:              10,
+  ssl: isLocal ? false : { rejectUnauthorized: false }, // FIXED: Required for Supabase
+  max: 5,               // Supabase free tier limit
   idleTimeoutMillis: 30_000,
-  connectionTimeoutMillis: 5_000,
-  ssl: isLocal ? false : { rejectUnauthorized: false },
+  connectionTimeoutMillis: 10_000,
 });
 
 pool.on('error', (err) => {
-  // Surface pool-level errors without crashing the process;
-  // individual query errors are handled at the call site
-  process.stderr.write(`[DB] Unexpected pool error: ${err.message}\n`);
+  console.error('[DB] Pool error:', err.message);
 });
+
+// FIXED: Test connection on startup to catch auth/CORS issues early
+pool.query('SELECT NOW()')
+  .then(() => console.log('[DB] ✓ PostgreSQL connected'))
+  .catch(err => console.error('[DB] ✗ Connection failed:', err.message));
 
 module.exports = pool;
