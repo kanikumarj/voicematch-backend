@@ -327,9 +327,21 @@ const MatchChatScreen = ({ roomId, partnerName, partnerSocketId, partnerId }) =>
                   fontSize: '11px',
                   marginTop: '4px',
                   opacity: 0.7,
-                  textAlign: 'right'
+                  textAlign: 'right',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-end',
+                  gap: '4px'
                 }}>
                   {formatTime(msg.timestamp)}
+                  {msg.fromMe && (
+                    <span style={{ 
+                      color: msg.status === 'read' ? '#4caf50' : 'inherit',
+                      fontSize: '12px' 
+                    }}>
+                      {msg.status === 'read' ? '✓✓' : '✓'}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
