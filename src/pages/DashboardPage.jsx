@@ -8,7 +8,7 @@ import Avatar from '../components/ui/Avatar';
 import Button from '../components/ui/Button';
 import { useToast } from '../components/ui/Toast';
 import CallScreen from '../modules/call/CallScreen';
-import IdentityChooser from '../components/ui/IdentityChooser';
+import MatchChatScreen from './chat/MatchChatScreen';
 import useActiveUsers from '../hooks/useActiveUsers';
 import useFriendNotifications from '../hooks/useFriendNotifications';
 import './DashboardPage.css';
@@ -38,7 +38,6 @@ export default function DashboardPage() {
   const [friendsData, setFriendsData]   = useState({ friends: [], pendingReceived: [] });
   const [searchTimer, setSearchTimer]   = useState(0);
   const [noUsersAvailable, setNoUsers]  = useState(false);
-  const [showIdentityChooser, setShowIdentityChooser] = useState(false);
   
   // Use new hooks
   const activeUsers = useActiveUsers();
@@ -82,10 +81,10 @@ export default function DashboardPage() {
       setReconnecting(false);
       if (state === 'in_call') setAppState('connected');
     }
-    function onMatchFound({ mode: foundMode, partnerId, partnerName, sessionId }) {
+    function onMatchFound({ mode: foundMode, partnerId, partnerName, sessionId, partnerSocketId }) {
       setNoUsers(false);
       setMatchMode(foundMode || 'voice');
-      setPartner({ id: partnerId, name: partnerName, sessionId });
+      setPartner({ id: partnerId, name: partnerName, sessionId, partnerSocketId });
       setAppState('matched');
     }
     function onBothReady({ initiator }) {
@@ -169,27 +168,9 @@ export default function DashboardPage() {
     try { return getSocket(); } catch { toast.error('Connection error, please refresh'); return null; }
   }
 
-  function handleConnectClick() {
-    const savedPref = localStorage.getItem('vm_identity_pref');
-    if (savedPref) {
-      // Auto-connect with saved preference
-      let sessionName = user.displayName;
-      if (savedPref === 'anonymous') {
-        const { generateAnonymousName } = require('../utils/nameGenerator');
-        sessionName = generateAnonymousName();
-      } else if (savedPref === 'custom') {
-        sessionName = localStorage.getItem('vm_custom_name') || user.displayName;
-      }
-      joinPool(sessionName);
-    } else {
-      setShowIdentityChooser(true);
-    }
-  }
-
-  function joinPool(sessionName) {
+  function joinPool() {
     const socket = getSocket_safe(); if (!socket) return;
-    socket.emit('find_match', { mode, sessionName });
-    setShowIdentityChooser(false);
+    socket.emit('find_match', { mode });
     setAppState('searching');
     setNoUsers(false);
   }
@@ -224,13 +205,13 @@ export default function DashboardPage() {
   // ── Call / Chat screen ───────────────────────────────────────────────────────
   if (appState === 'connected' || appState === 'connecting') {
     if (matchMode === 'chat') {
-      // TODO: MatchChatScreen implementation
       return (
-        <div style={{ padding: 24, textAlign: 'center' }}>
-          <h2>Chat Mode Active</h2>
-          <p>You are connected with {partner?.name}!</p>
-          <Button onClick={handleEndCall}>End Chat</Button>
-        </div>
+        <MatchChatScreen
+          roomId={partner?.sessionId}
+          partnerName={partner?.name}
+          partnerSocketId={partner?.partnerSocketId}
+          partnerId={partner?.id}
+        />
       );
     }
 
@@ -412,14 +393,6 @@ export default function DashboardPage() {
           </section>
         )}
       </div>
-      
-      {showIdentityChooser && (
-        <IdentityChooser 
-          user={user} 
-          onConfirm={joinPool} 
-          onCancel={() => setShowIdentityChooser(false)} 
-        />
-      )}
     </AppShell>
   );
 }

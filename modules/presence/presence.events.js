@@ -38,10 +38,8 @@ function registerPresenceEvents(socket, io) {
   const handleJoinQueue = async (data = {}) => {
     try {
       const mode = data.mode || 'voice';
-      const sessionName = data.sessionName || null;
       
       socket.mode = mode;
-      socket.sessionName = sessionName;
 
       // P4-9: Redis token bucket — Socket.IO bypasses Express rate limiters
       const rlKey  = `rl:pool:${userId}`;

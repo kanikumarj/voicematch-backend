@@ -66,6 +66,31 @@ function registerSignalingEvents(socket, io) {
     }
   });
 
+  // ── match_message (Chat Relay) ────────────────────────────────────────────
+  socket.on('match_message', ({ roomId, targetSocketId, text }) => {
+    io.to(targetSocketId).emit('match_message', {
+      text,
+      fromSocketId: socket.id,
+      timestamp: Date.now()
+    });
+  });
+
+  // ── match_typing (Chat Relay) ─────────────────────────────────────────────
+  socket.on('match_typing', ({ roomId, targetSocketId }) => {
+    io.to(targetSocketId).emit('match_typing', {
+      fromSocketId: socket.id
+    });
+  });
+
+  // ── match_end (Chat Relay) ────────────────────────────────────────────────
+  socket.on('match_end', ({ roomId, targetSocketId }) => {
+    io.to(targetSocketId).emit('match_ended', {
+      fromSocketId: socket.id
+    });
+    // Optional: trigger normal call_end cleanup
+    socket.emit('call_end', { reason: 'user_ended' });
+  });
+
   // ── call_end ──────────────────────────────────────────────────────────────
   socket.on('call_end', async ({ reason = 'user_ended' } = {}) => {
     try {

@@ -181,13 +181,11 @@ async function attemptMatch(io, mode = 'voice', _depth = 0) {
     process.stderr.write(`[MATCHMAKING] session create error: ${err.message}\n`);
   }
 
-  const socketA = io.sockets.sockets.get(socketAId);
-  const socketB = io.sockets.sockets.get(socketBId);
-  const nameA = (socketA && socketA.sessionName) ? socketA.sessionName : nameMap[userAId];
-  const nameB = (socketB && socketB.sessionName) ? socketB.sessionName : nameMap[userBId];
+  const nameA = nameMap[userAId] || 'Anonymous';
+  const nameB = nameMap[userBId] || 'Anonymous';
 
-  io.to(socketAId).emit('match_found', { mode, partnerId: userBId, partnerName: nameB, sessionId });
-  io.to(socketBId).emit('match_found', { mode, partnerId: userAId, partnerName: nameA, sessionId });
+  io.to(socketAId).emit('match_found', { mode, partnerId: userBId, partnerName: nameB, sessionId, partnerSocketId: socketBId });
+  io.to(socketBId).emit('match_found', { mode, partnerId: userAId, partnerName: nameA, sessionId, partnerSocketId: socketAId });
 
   process.stdout.write(
     `[MATCHMAKING] Matched ${nameA} ↔ ${nameB} (mode: ${mode})\n`
