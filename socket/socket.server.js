@@ -29,7 +29,13 @@ function initSocketServer(httpServer) {
 
   io = new Server(httpServer, {
     cors: {
-      origin:      allowedOrigins,
+      origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS: ' + origin));
+        }
+      },
       methods:     ['GET', 'POST'],
       credentials: true,
     },
