@@ -59,7 +59,7 @@ async function getFriendsData(userId) {
 
 async function acceptFriendRequest(requestId, receiverId) {
   // Use transaction to ensure data integrity
-  const client = await db.pool.connect();
+  const client = await db.connect();
   try {
     await client.query('BEGIN');
     

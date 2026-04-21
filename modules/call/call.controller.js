@@ -38,8 +38,8 @@ function getTurnCredentials(req, res) {
   // Coturn time-limited credential format:
   //   username = "<unix_timestamp_expiry>:<userId>"
   //   credential = HMAC-SHA1(username, TURN_SECRET) → base64
-  const expiry    = Math.floor(Date.now() / 1000) + 3600;  // 1 hour
-  const username  = `${expiry}:${req.user.id}`;
+  const expiry = Math.floor(Date.now() / 1000) + 3600;  // 1 hour
+  const username = `${expiry}:${req.user.id}`;
   const credential = crypto
     .createHmac('sha1', secret)
     .update(username)
@@ -52,7 +52,7 @@ function getTurnCredentials(req, res) {
       { urls: 'stun:stun1.l.google.com:19302' },
       // Authenticated TURN
       {
-        urls:       turnUrl,
+        urls: turnUrl,
         username,
         credential,
       },
