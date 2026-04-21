@@ -45,6 +45,17 @@ app.options('*', cors({
 app.use(express.json({ limit: '16kb' }));
 app.use(apiLimiter);
 
+// ─── Passport & Session ───────────────────────────────────────────────────────
+const session = require('express-session');
+const passport = require('./src/config/passport');
+
+app.use(session({
+  secret: process.env.JWT_SECRET || 'fallback_secret',
+  resave: false,
+  saveUninitialized: false
+}));
+app.use(passport.initialize());
+
 // ─── REST Routes ────────────────────────────────────────────────────────────────────────────────
 app.use('/api/auth',     authRouter);
 app.use('/api/call',     callRouter);

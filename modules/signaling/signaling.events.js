@@ -2,6 +2,7 @@
 
 const presence = require('../presence/presence.service');
 const { pairKey } = require('../matchmaking/matchmaking.service');
+const { updateStreak } = require('../call/call.service');
 
 /**
  * Resolve partner's current socket reference.
@@ -83,7 +84,12 @@ function registerSignalingEvents(socket, io) {
         const sessionId = await redis.hget('session_id_map', key);
         if (sessionId) {
           const endReason = reason === 'skip' ? 'skip' : 'user_disconnect';
-          await presence.endSession(sessionId, endReason);
+          const duration = await presence.endSession(sessionId, endReason);
+          
+          if (duration > 30) {
+            await updateStreak(userId);
+            if (partnerId) await updateStreak(partnerId);
+          }
           await redis.hdel('session_id_map', key);
         }
       }

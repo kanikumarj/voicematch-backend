@@ -33,9 +33,16 @@ function registerPresenceEvents(socket, io) {
     }
   });
 
-  // ── join_pool ────────────────────────────────────────────────────────────────
-  socket.on('join_pool', async () => {
+  // ── join_pool / find_match ───────────────────────────────────────────────────
+  // Note: For backwards compatibility we handle both 'join_pool' and 'find_match'
+  const handleJoinQueue = async (data = {}) => {
     try {
+      const mode = data.mode || 'voice';
+      const sessionName = data.sessionName || null;
+      
+      socket.mode = mode;
+      socket.sessionName = sessionName;
+
       // P4-9: Redis token bucket — Socket.IO bypasses Express rate limiters
       const rlKey  = `rl:pool:${userId}`;
       const redis  = require('../../db/redis');
@@ -45,35 +52,24 @@ function registerPresenceEvents(socket, io) {
         return socket.emit('error', { message: 'Too many queue requests. Please slow down.' });
       }
 
-      // P5: Email verification gate (TEMPORARILY DISABLED)
-      /*
-      const db = require('../../db');
-      const { rows: uRows } = await db.query(
-        'SELECT email_verified FROM users WHERE id = $1',
-        [userId],
-      );
-      if (!uRows[0]?.email_verified) {
-        return socket.emit('verification_required', {
-          message: 'Please verify your email address before joining a call.',
-        });
-      }
-      */
-
       // Guard: already in_call — do not re-queue
       const currentSocket = await presence.getUserSocket(userId);
       if (!currentSocket) return;
 
       await presence.setUserStatus(userId, 'searching');
-      await presence.addToPool(userId);       // LREM guard prevents duplicates
+      await presence.addToPool(userId, mode);       // LREM guard prevents duplicates
       await recordJoinTime(userId);           // FIXED: track wait time for gender filter widening
+      
+      socket.emit('searching', { status: 'searching', mode });
 
-      // Attempt match — if pool still has waiting users after match, notify them
-      await attemptMatch(io);
+      // Attempt match
+      await attemptMatch(io, mode);
 
       // QA-P2-6: Emit queue_position to users still waiting after pairing
-      const remaining = await presence.getPoolLength();
+      const remaining = await presence.getPoolLength(mode);
       if (remaining > 0) {
-        const waitingIds = await redis.lrange('searching_pool', 0, -1);
+        const poolKey = presence.KEYS.searchPool(mode);
+        const waitingIds = await redis.lrange(poolKey, 0, -1);
         const socketMap  = await redis.hgetall('user_socket_map');
         for (const wId of waitingIds) {
           const wSid = socketMap?.[wId];
@@ -85,17 +81,24 @@ function registerPresenceEvents(socket, io) {
       process.stderr.write(`[PRESENCE] join_pool error ${userId}: ${err.message}\n`);
       socket.emit('error', { message: 'Failed to join pool. Please try again.' });
     }
-  });
+  };
 
-  // ── leave_pool ───────────────────────────────────────────────────────────────
-  socket.on('leave_pool', async () => {
+  socket.on('join_pool', handleJoinQueue);
+  socket.on('find_match', handleJoinQueue);
+
+  // ── leave_pool / cancel_search ───────────────────────────────────────────────
+  const handleLeavePool = async () => {
     try {
       await presence.removeFromPool(userId);
       await presence.setUserStatus(userId, 'online');
+      socket.emit('search_cancelled', { status: 'idle' });
     } catch (err) {
       process.stderr.write(`[PRESENCE] leave_pool error ${userId}: ${err.message}\n`);
     }
-  });
+  };
+
+  socket.on('leave_pool', handleLeavePool);
+  socket.on('cancel_search', handleLeavePool);
 
   // ── disconnect ───────────────────────────────────────────────────────────────
   socket.on('disconnect', async (reason) => {
@@ -130,9 +133,10 @@ function registerPresenceEvents(socket, io) {
           io.to(partnerSocketId).emit('partner_disconnected', { reason: 'user_disconnect' });
 
           // Requeue partner
+          const partnerMode = await presence.getUserMode(partnerId);
           await presence.setUserStatus(partnerId, 'searching');
-          await presence.addToPool(partnerId);
-          await attemptMatch(io);
+          await presence.addToPool(partnerId, partnerMode);
+          await attemptMatch(io, partnerMode);
         }
 
         // Clean up pair

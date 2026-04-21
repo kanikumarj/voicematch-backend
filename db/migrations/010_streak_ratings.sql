@@ -1,0 +1,16 @@
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS streak_count INT DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS streak_last_date DATE,
+  ADD COLUMN IF NOT EXISTS streak_best INT DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS avg_rating DECIMAL(3,2) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS total_ratings INT DEFAULT 0;
+
+CREATE TABLE IF NOT EXISTS call_ratings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  call_id UUID,
+  rater_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  rated_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  rating INT CHECK (rating BETWEEN 1 AND 5),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(call_id, rater_id)
+);

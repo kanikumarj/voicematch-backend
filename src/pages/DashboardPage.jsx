@@ -8,6 +8,9 @@ import Avatar from '../components/ui/Avatar';
 import Button from '../components/ui/Button';
 import { useToast } from '../components/ui/Toast';
 import CallScreen from '../modules/call/CallScreen';
+import IdentityChooser from '../components/ui/IdentityChooser';
+import useActiveUsers from '../hooks/useActiveUsers';
+import useFriendNotifications from '../hooks/useFriendNotifications';
 import './DashboardPage.css';
 
 const API = import.meta.env.VITE_API_URL;
@@ -35,6 +38,19 @@ export default function DashboardPage() {
   const [friendsData, setFriendsData]   = useState({ friends: [], pendingReceived: [] });
   const [searchTimer, setSearchTimer]   = useState(0);
   const [noUsersAvailable, setNoUsers]  = useState(false);
+  const [showIdentityChooser, setShowIdentityChooser] = useState(false);
+  
+  // Use new hooks
+  const activeUsers = useActiveUsers();
+  useFriendNotifications();
+
+  const [mode, setMode] = useState(localStorage.getItem('vm_mode') || 'voice');
+  const [matchMode, setMatchMode] = useState('voice'); // The mode of the found match
+
+  const handleModeChange = (newMode) => {
+    setMode(newMode);
+    localStorage.setItem('vm_mode', newMode);
+  };
 
   const timerRef      = useRef(null);
   const socketListened = useRef(false);
@@ -66,8 +82,9 @@ export default function DashboardPage() {
       setReconnecting(false);
       if (state === 'in_call') setAppState('connected');
     }
-    function onMatchFound({ partnerId, partnerName, sessionId }) {
+    function onMatchFound({ mode: foundMode, partnerId, partnerName, sessionId }) {
       setNoUsers(false);
+      setMatchMode(foundMode || 'voice');
       setPartner({ id: partnerId, name: partnerName, sessionId });
       setAppState('matched');
     }
@@ -152,9 +169,27 @@ export default function DashboardPage() {
     try { return getSocket(); } catch { toast.error('Connection error, please refresh'); return null; }
   }
 
-  function joinPool() {
+  function handleConnectClick() {
+    const savedPref = localStorage.getItem('vm_identity_pref');
+    if (savedPref) {
+      // Auto-connect with saved preference
+      let sessionName = user.displayName;
+      if (savedPref === 'anonymous') {
+        const { generateAnonymousName } = require('../utils/nameGenerator');
+        sessionName = generateAnonymousName();
+      } else if (savedPref === 'custom') {
+        sessionName = localStorage.getItem('vm_custom_name') || user.displayName;
+      }
+      joinPool(sessionName);
+    } else {
+      setShowIdentityChooser(true);
+    }
+  }
+
+  function joinPool(sessionName) {
     const socket = getSocket_safe(); if (!socket) return;
-    socket.emit('join_pool');
+    socket.emit('find_match', { mode, sessionName });
+    setShowIdentityChooser(false);
     setAppState('searching');
     setNoUsers(false);
   }
@@ -186,8 +221,19 @@ export default function DashboardPage() {
     setAppState('searching');
   }
 
-  // ── Call screen ──────────────────────────────────────────────────────────────
+  // ── Call / Chat screen ───────────────────────────────────────────────────────
   if (appState === 'connected' || appState === 'connecting') {
+    if (matchMode === 'chat') {
+      // TODO: MatchChatScreen implementation
+      return (
+        <div style={{ padding: 24, textAlign: 'center' }}>
+          <h2>Chat Mode Active</h2>
+          <p>You are connected with {partner?.name}!</p>
+          <Button onClick={handleEndCall}>End Chat</Button>
+        </div>
+      );
+    }
+
     return (
       <CallScreen
         socket={getSocket()}
@@ -219,9 +265,17 @@ export default function DashboardPage() {
             <h2 className="dash-hello">
               {getGreeting()}, {user?.displayName || 'there'} 👋
             </h2>
-            {user?.streak_count > 0 && (
-              <span className="dash-streak">🔥 {user.streak_count} day streak</span>
-            )}
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              {user?.streak_count > 1 && (
+                <span className="dash-streak">🔥 {user.streak_count} day streak</span>
+              )}
+              {activeUsers > 0 && (
+                <span style={{ fontSize: '12px', background: 'var(--surface)', padding: '4px 8px', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                  <span className="active-dot" style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#4caf50', marginRight: 4 }} />
+                  {activeUsers} online
+                </span>
+              )}
+            </div>
           </div>
           <Avatar name={user?.displayName} size="md" onClick={() => navigate('/profile')} style={{ cursor: 'pointer' }} />
         </section>
@@ -232,13 +286,28 @@ export default function DashboardPage() {
           {/* IDLE */}
           {appState === 'idle' && (
             <div className="connect-idle">
-              <div className="connect-mic-wrap">
-                <div className="connect-mic">🎙️</div>
+              <h3>How do you want to connect?</h3>
+              <div style={{ display: 'flex', gap: 12, margin: '20px 0', justifyContent: 'center' }}>
+                <Button 
+                  variant={mode === 'voice' ? 'primary' : 'outline'} 
+                  onClick={() => handleModeChange('voice')}
+                  style={{ flex: 1 }}
+                >
+                  🎙️ Voice Call
+                </Button>
+                <Button 
+                  variant={mode === 'chat' ? 'primary' : 'outline'} 
+                  onClick={() => handleModeChange('chat')}
+                  style={{ flex: 1 }}
+                >
+                  💬 Text Chat
+                </Button>
               </div>
-              <h3>Start Connecting</h3>
-              <p>Match with a random stranger for a real-time voice conversation</p>
-              <Button size="lg" fullWidth onClick={joinPool}>
-                Connect Now 🎙️
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 24 }}>
+                Match with {mode === 'voice' ? 'voice' : 'chat'} users only
+              </p>
+              <Button size="lg" fullWidth onClick={handleConnectClick}>
+                Connect Now
               </Button>
             </div>
           )}
@@ -343,6 +412,14 @@ export default function DashboardPage() {
           </section>
         )}
       </div>
+      
+      {showIdentityChooser && (
+        <IdentityChooser 
+          user={user} 
+          onConfirm={joinPool} 
+          onCancel={() => setShowIdentityChooser(false)} 
+        />
+      )}
     </AppShell>
   );
 }

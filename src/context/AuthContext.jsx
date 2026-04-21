@@ -57,15 +57,17 @@ export function AuthProvider({ children }) {
   }, []);
 
   // ── Public methods ────────────────────────────────────────────────────────
-  const login = useCallback(async (email, password) => {
-    const data = await api.post('/api/auth/login', { email, password });
+  const login = useCallback(async (payload, password) => {
+    const body = typeof payload === 'object' ? payload : { identifier: payload, password };
+    const data = await api.post('/api/auth/login', body);
     persist(data.token, data.user);
     connectSocket(data.token);
     return data.user;
   }, []);
 
-  const register = useCallback(async (email, password) => {
-    const data = await api.post('/api/auth/register', { email, password });
+  const register = useCallback(async (payload, password) => {
+    const body = typeof payload === 'object' ? payload : { email: payload, password };
+    const data = await api.post('/api/auth/register', body);
     persist(data.token, data.user);
     connectSocket(data.token);
     return data.user;

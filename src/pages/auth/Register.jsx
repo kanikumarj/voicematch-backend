@@ -9,7 +9,7 @@ export default function Register() {
   const { register } = useAuth();
   const navigate     = useNavigate();
 
-  const [form,       setForm]       = useState({ email: '', password: '', confirmPassword: '' });
+  const [form,       setForm]       = useState({ email: '', username: '', password: '', confirmPassword: '' });
   const [loading,    setLoading]    = useState(false);
   const [error,      setError]      = useState('');
   const [registered, setRegistered] = useState(false);
@@ -22,12 +22,13 @@ export default function Register() {
     e.preventDefault();
     setError('');
 
+    if (!form.email.trim() && !form.username.trim()) { setError('Email or username is required.'); return; }
     if (form.password.length < 8) { setError('Password must be at least 8 characters.'); return; }
     if (form.password !== form.confirmPassword) { setError('Passwords do not match.'); return; }
 
     setLoading(true);
     try {
-      const user = await register(form.email.trim(), form.password);
+      const user = await register({ email: form.email.trim(), username: form.username.trim(), password: form.password });
       setRegistered(true);
       // Auto-redirect after 3s — show verification prompt first
       setTimeout(() => {
@@ -65,11 +66,20 @@ export default function Register() {
 
         <form onSubmit={handleSubmit} noValidate>
           <div className="field-group">
-            <label htmlFor="reg-email">Email</label>
+            <label htmlFor="reg-username">Username</label>
+            <input
+              id="reg-username" name="username" type="text"
+              value={form.username} onChange={onChange}
+              placeholder="cooluser123" autoComplete="username"
+            />
+          </div>
+
+          <div className="field-group">
+            <label htmlFor="reg-email">Email (optional)</label>
             <input
               id="reg-email" name="email" type="email"
               value={form.email} onChange={onChange}
-              placeholder="you@example.com" required autoComplete="email"
+              placeholder="you@example.com" autoComplete="email"
             />
           </div>
 

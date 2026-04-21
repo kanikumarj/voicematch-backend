@@ -17,13 +17,18 @@ function appError(code, message) {
 
 // ─── Zod schemas ─────────────────────────────────────────────────────────────
 const registerSchema = z.object({
-  email:    z.string().email('Invalid email format').max(255),
-  password: z.string().min(8, 'Password must be at least 8 characters').max(128),
+  email:       z.string().email('Invalid email format').max(255).optional().nullable(),
+  username:    z.string().min(3, 'Username must be at least 3 characters').max(50).optional().nullable(),
+  password:    z.string().min(8, 'Password must be at least 8 characters').max(128),
+  displayName: z.string().optional().nullable(),
+}).refine(data => data.email || data.username, {
+  message: "Either email or username is required",
+  path: ["identifier"]
 });
 
 const loginSchema = z.object({
-  email:    z.string().email('Invalid email format'),
-  password: z.string().min(1, 'Password is required'),
+  identifier: z.string().min(1, 'Email or username is required'),
+  password:   z.string().min(1, 'Password is required'),
 });
 
 const onboardingSchema = z.object({
@@ -70,44 +75,47 @@ async function registerUser(body) {
     throw appError('VALIDATION_ERROR', parsed.error.issues[0].message);
   }
 
-  const { email, password } = parsed.data;
-  const normalizedEmail     = email.toLowerCase().trim();
+  const { email, username, password, displayName } = parsed.data;
+  const normalizedEmail = email ? email.toLowerCase().trim() : null;
+  const normalizedUsername = username ? username.trim() : null;
 
-  // Duplicate email — early exit
-  const existing = await db.query(
-    'SELECT id FROM users WHERE email = $1',
-    [normalizedEmail],
-  );
-  if (existing.rows.length > 0) {
-    throw appError('EMAIL_EXISTS', 'An account with this email already exists');
+  // Duplicate check
+  if (normalizedEmail) {
+    const existing = await db.query('SELECT id FROM users WHERE email = $1', [normalizedEmail]);
+    if (existing.rows.length > 0) throw appError('EMAIL_EXISTS', 'An account with this email already exists');
+  }
+  if (normalizedUsername) {
+    const existing = await db.query('SELECT id FROM users WHERE username = $1', [normalizedUsername]);
+    if (existing.rows.length > 0) throw appError('USERNAME_EXISTS', 'Username already taken');
   }
 
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+  const finalDisplayName = displayName || normalizedUsername || (normalizedEmail ? normalizedEmail.split('@')[0] : 'User');
 
   let insertedUser;
   try {
     const { rows } = await db.query(
-      `INSERT INTO users (email, password_hash)
-       VALUES ($1, $2)
-       RETURNING id, email, is_onboarded`,
-      [normalizedEmail, passwordHash],
+      `INSERT INTO users (email, username, password_hash, display_name)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, email, username, is_onboarded`,
+      [normalizedEmail, normalizedUsername, passwordHash, finalDisplayName],
     );
     insertedUser = rows[0];
   } catch (err) {
-    // pg UNIQUE violation — catches race-condition duplicate email
     if (err.code === '23505') {
-      throw appError('EMAIL_EXISTS', 'An account with this email already exists');
+      throw appError('UNIQUE_EXISTS', 'An account with this email or username already exists');
     }
     throw err;
   }
 
   const token = signToken({ id: insertedUser.id, email: insertedUser.email });
 
-  // Fire-and-forget — do not block registration if email delivery fails
-  const { sendVerificationEmail } = require('../email/email.service');
-  sendVerificationEmail(insertedUser.id, normalizedEmail).catch((err) => {
-    process.stderr.write(`[EMAIL] Verification send failed for ${insertedUser.id}: ${err.message}\n`);
-  });
+  if (normalizedEmail) {
+    const { sendVerificationEmail } = require('../email/email.service');
+    sendVerificationEmail(insertedUser.id, normalizedEmail).catch((err) => {
+      process.stderr.write(`[EMAIL] Verification send failed for ${insertedUser.id}: ${err.message}\n`);
+    });
+  }
 
   return {
     userId:        insertedUser.id,
@@ -123,15 +131,16 @@ async function loginUser(body) {
     throw appError('VALIDATION_ERROR', parsed.error.issues[0].message);
   }
 
-  const { email, password }  = parsed.data;
-  const normalizedEmail      = email.toLowerCase().trim();
+  const { identifier, password } = parsed.data;
+  const normalizedIdentifier     = identifier.toLowerCase().trim();
 
   const { rows } = await db.query(
-    'SELECT id, email, password_hash, is_onboarded FROM users WHERE email = $1',
-    [normalizedEmail],
+    `SELECT id, email, username, password_hash, is_onboarded 
+     FROM users 
+     WHERE email = $1 OR username = $1`,
+    [normalizedIdentifier],
   );
 
-  // Use constant-time comparison even when user not found to prevent timing attacks
   const dummyHash = '$2b$12$invalidhashpadding000000000000000000000000000000000000000';
   const user      = rows[0] || null;
   const hashToCompare = user ? user.password_hash : dummyHash;
@@ -139,7 +148,7 @@ async function loginUser(body) {
   const isValid = await bcrypt.compare(password, hashToCompare);
 
   if (!user || !isValid) {
-    throw appError('INVALID_CREDENTIALS', 'Invalid email or password');
+    throw appError('INVALID_CREDENTIALS', 'Invalid email, username, or password');
   }
 
   const token = signToken({ id: user.id, email: user.email });
@@ -216,9 +225,32 @@ async function getUserById(userId) {
   return rows[0] ? safePublicUser(rows[0]) : null;
 }
 
+// ─── Google OAuth ────────────────────────────────────────────────────────────
+async function findOrCreateGoogleUser({ googleId, email, displayName, avatar }) {
+  let user = await db.query('SELECT * FROM users WHERE google_id = $1', [googleId]);
+  if (user.rows[0]) return user.rows[0];
+
+  if (email) {
+    user = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+    if (user.rows[0]) {
+      await db.query('UPDATE users SET google_id = $1 WHERE email = $2', [googleId, email]);
+      return user.rows[0];
+    }
+  }
+
+  const newUser = await db.query(`
+    INSERT INTO users (email, display_name, google_id, avatar, email_verified)
+    VALUES ($1, $2, $3, $4, true)
+    RETURNING *
+  `, [email || null, displayName, googleId, avatar]);
+  
+  return newUser.rows[0];
+}
+
 module.exports = {
   registerUser,
   loginUser,
   completeOnboarding,
   getUserById,
+  findOrCreateGoogleUser,
 };

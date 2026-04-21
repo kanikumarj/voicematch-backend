@@ -3,13 +3,17 @@ import { useWebRTC } from './useWebRTC';
 import Avatar from '../../components/ui/Avatar';
 import Button from '../../components/ui/Button';
 import BottomSheet from '../../components/ui/BottomSheet';
+import useCallTimer from '../../hooks/useCallTimer';
+import api from '../../lib/api';
 import './CallScreen.css';
 
 export default function CallScreen({ socket, token, partnerName, isInitiator, partnerId, sessionId, onCallEnd }) {
-  const [duration, setDuration] = useState(0);
-  const timerRef = useRef(null);
   const [friendState, setFriendState] = useState('idle');
   const [incomingReq, setIncomingReq] = useState(null);
+  
+  const [showRating, setShowRating] = useState(false);
+  const [callEndedReason, setCallEndedReason] = useState(null);
+  const [ratingVal, setRatingVal] = useState(0);
 
   const {
     callStatus, isMuted, remoteAudioRef,
@@ -17,12 +21,24 @@ export default function CallScreen({ socket, token, partnerName, isInitiator, pa
     toggleMute, endCall,
   } = useWebRTC(socket, token);
 
+  const { seconds, formatted } = useCallTimer(callStatus === 'connected');
+
+  const interceptEnd = (reason) => {
+    endCall();
+    if (seconds > 10 && partnerId) {
+      setCallEndedReason(reason);
+      setShowRating(true);
+    } else {
+      onCallEnd(reason);
+    }
+  };
+
   useEffect(() => {
     socket.on('webrtc_offer',         async ({ offer })     => await answerCall(offer));
     socket.on('webrtc_answer',        async ({ answer })    => await handleRemoteAnswer(answer));
     socket.on('webrtc_ice_candidate', async ({ candidate }) => await handleRemoteIce(candidate));
-    socket.on('partner_disconnected', ({ reason }) => { clearInterval(timerRef.current); onCallEnd(reason); });
-    socket.on('call_ended',           () => { clearInterval(timerRef.current); onCallEnd('user_ended'); });
+    socket.on('partner_disconnected', ({ reason }) => { interceptEnd(reason); });
+    socket.on('call_ended',           () => { interceptEnd('user_ended'); });
 
     const onReqReceived   = ({ requestId, fromUser }) => setIncomingReq({ requestId, fromUser });
     const onReqSent       = () => setFriendState('sent');
@@ -51,19 +67,22 @@ export default function CallScreen({ socket, token, partnerName, isInitiator, pa
 
   useEffect(() => { if (isInitiator) startCall(); }, []);
 
-  useEffect(() => {
-    if (callStatus === 'connected') {
-      timerRef.current = setInterval(() => setDuration(d => d + 1), 1000);
+  function handleEnd() { interceptEnd('user_ended'); }
+
+  async function submitRating() {
+    if (ratingVal > 0) {
+      try {
+        await api.post('/api/call/rating', {
+          callId: sessionId,
+          ratedUserId: partnerId,
+          rating: ratingVal
+        });
+      } catch (err) {
+        console.error(err);
+      }
     }
-    return () => clearInterval(timerRef.current);
-  }, [callStatus]);
-
-  function fmt(s) {
-    const m = String(Math.floor(s / 60)).padStart(2, '0');
-    return `${m}:${String(s % 60).padStart(2, '0')}`;
+    onCallEnd(callEndedReason);
   }
-
-  function handleEnd() { endCall(); onCallEnd('user_ended'); }
 
   function sendFriendReq() {
     if (friendState !== 'idle') return;
@@ -100,7 +119,7 @@ export default function CallScreen({ socket, token, partnerName, isInitiator, pa
             <Avatar name={partnerName} size="lg" status="in_call" />
             <div className="call-header-info">
               <h2 className="call-partner-name">{partnerName}</h2>
-              <span className="call-duration-badge">In call • {fmt(duration)}</span>
+              <span className="call-duration-badge">In call • {formatted}</span>
             </div>
           </div>
 
@@ -155,11 +174,37 @@ export default function CallScreen({ socket, token, partnerName, isInitiator, pa
       )}
 
       {/* ── Ended ── */}
-      {callStatus === 'ended' && (
-        <div className="call-state-ended">
-          <span className="call-ended-icon">📵</span>
-          <h2>Call ended</h2>
-          <p>Finding your next match…</p>
+      {(callStatus === 'ended' || showRating) && (
+        <div className="call-state-ended" style={{ background: 'var(--bg)', position: 'absolute', inset: 0, zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          {showRating ? (
+            <div style={{ background: 'var(--surface)', padding: 32, borderRadius: 16, width: '100%', maxWidth: 400, textAlign: 'center', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}>
+              <h2>Rate your call</h2>
+              <p style={{ margin: '8px 0 24px', color: 'var(--text-muted)' }}>How was your conversation with {partnerName}?</p>
+              
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginBottom: 32 }}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => setRatingVal(star)}
+                    style={{ background: 'none', border: 'none', fontSize: 40, cursor: 'pointer', transition: 'transform 0.2s', transform: ratingVal === star ? 'scale(1.2)' : 'scale(1)', filter: star <= ratingVal ? 'none' : 'grayscale(100%) opacity(0.3)' }}
+                  >
+                    ⭐
+                  </button>
+                ))}
+              </div>
+              
+              <div style={{ display: 'flex', gap: 12 }}>
+                <Button variant="ghost" style={{ flex: 1 }} onClick={() => onCallEnd(callEndedReason)}>Skip</Button>
+                <Button style={{ flex: 2 }} disabled={!ratingVal} onClick={submitRating}>Submit</Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <span className="call-ended-icon">📵</span>
+              <h2>Call ended</h2>
+              <p>Finding your next match…</p>
+            </>
+          )}
         </div>
       )}
 

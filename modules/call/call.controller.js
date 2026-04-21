@@ -60,4 +60,41 @@ function getTurnCredentials(req, res) {
   });
 }
 
-module.exports = { getTurnCredentials };
+const db = require('../../db');
+
+async function submitRating(req, res) {
+  const { callId, ratedUserId, rating } = req.body;
+  const raterId = req.user.id;
+
+  try {
+    // Only insert if all fields are provided (callId can be null if needed, but ratedUserId and rating are required)
+    if (!ratedUserId || !rating) {
+      return res.status(400).json({ error: 'ratedUserId and rating are required' });
+    }
+
+    await db.query(`
+      INSERT INTO call_ratings (call_id, rater_id, rated_id, rating)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT DO NOTHING
+    `, [callId || null, raterId, ratedUserId, rating]);
+
+    // Update avg rating for rated user
+    await db.query(`
+      UPDATE users SET
+        avg_rating = (
+          SELECT COALESCE(AVG(rating), 0) FROM call_ratings WHERE rated_id = $1
+        ),
+        total_ratings = (
+          SELECT COUNT(*) FROM call_ratings WHERE rated_id = $1
+        )
+      WHERE id = $1
+    `, [ratedUserId]);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[RATING] submitRating error:', err.message);
+    res.status(500).json({ error: 'Failed to submit rating' });
+  }
+}
+
+module.exports = { getTurnCredentials, submitRating };

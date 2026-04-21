@@ -1,0 +1,10 @@
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS google_id VARCHAR(255),
+  ADD COLUMN IF NOT EXISTS avatar VARCHAR(500),
+  ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT false,
+  ADD COLUMN IF NOT EXISTS username VARCHAR(50);
+ALTER TABLE users ALTER COLUMN email DROP NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id
+  ON users(google_id) WHERE google_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username
+  ON users(username) WHERE username IS NOT NULL;

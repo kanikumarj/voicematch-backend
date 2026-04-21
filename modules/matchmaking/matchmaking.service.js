@@ -90,18 +90,18 @@ async function isCompatible(userAId, userBId) {
 }
 
 // ─── Core matchmaking ─────────────────────────────────────────────────────────
-async function attemptMatch(io, _depth = 0) {
+async function attemptMatch(io, mode = 'voice', _depth = 0) {
   // Safety guard: avoid infinite recursion if all pool members are on cooldown/incompatible
   if (_depth > 10) return;
 
-  const poolLen = await presence.getPoolLength();
+  const poolLen = await presence.getPoolLength(mode);
   if (poolLen < 2) return;
 
-  const [userAId, userBId] = await presence.popTwoFromPool();
+  const [userAId, userBId] = await presence.popTwoFromPool(mode);
 
   if (!userAId || !userBId) {
-    if (userAId) await presence.addToPool(userAId);
-    if (userBId) await presence.addToPool(userBId);
+    if (userAId) await presence.addToPool(userAId, mode);
+    if (userBId) await presence.addToPool(userBId, mode);
     return;
   }
 
@@ -111,20 +111,21 @@ async function attemptMatch(io, _depth = 0) {
     presence.getUserSocket(userBId),
   ]);
 
-  if (!socketAId && !socketBId) return attemptMatch(io, _depth + 1);
-  if (!socketAId) { await presence.addToPool(userBId); return attemptMatch(io, _depth + 1); }
-  if (!socketBId) { await presence.addToPool(userAId); return attemptMatch(io, _depth + 1); }
+  if (!socketAId && !socketBId) return attemptMatch(io, mode, _depth + 1);
+  if (!socketAId) { await presence.addToPool(userBId, mode); return attemptMatch(io, mode, _depth + 1); }
+  if (!socketBId) { await presence.addToPool(userAId, mode); return attemptMatch(io, mode, _depth + 1); }
 
   // ── Block check ──────────────────────────────────────────────────────────────
   const blocked = await isBlocked(userAId, userBId);
+  const poolKey = presence.KEYS.searchPool(mode);
   if (blocked) {
     const [dirA, dirB] = await Promise.all([
       getPoolPushDirection(userAId),
       getPoolPushDirection(userBId),
     ]);
-    await redis[dirA.toLowerCase()]('searching_pool', userAId);
-    await redis[dirB.toLowerCase()]('searching_pool', userBId);
-    return attemptMatch(io, _depth + 1);
+    await redis[dirA.toLowerCase()](poolKey, userAId);
+    await redis[dirB.toLowerCase()](poolKey, userBId);
+    return attemptMatch(io, mode, _depth + 1);
   }
 
   // ── Skip cooldown check ───────────────────────────────────────────────────────
@@ -133,8 +134,8 @@ async function attemptMatch(io, _depth = 0) {
   const onCooldown = await hasSkipCooldown(userAId, userBId);
   if (onCooldown) {
     // Push to BACK of pool so the next pair at the front can be tried
-    await redis.rpush('searching_pool', userAId, userBId);
-    return attemptMatch(io, _depth + 1);
+    await redis.rpush(poolKey, userAId, userBId);
+    return attemptMatch(io, mode, _depth + 1);
   }
 
   // ── Compatibility check (gender preference) ───────────────────────────────────
@@ -155,8 +156,8 @@ async function attemptMatch(io, _depth = 0) {
       if (longB) await widenFilter(userBId);
 
       // Put both back at the end of the pool and keep trying
-      await redis.rpush('searching_pool', userAId, userBId);
-      return attemptMatch(io, _depth + 1);
+      await redis.rpush(poolKey, userAId, userBId);
+      return attemptMatch(io, mode, _depth + 1);
     }
   }
 
@@ -180,11 +181,16 @@ async function attemptMatch(io, _depth = 0) {
     process.stderr.write(`[MATCHMAKING] session create error: ${err.message}\n`);
   }
 
-  io.to(socketAId).emit('match_found', { partnerId: userBId, partnerName: nameMap[userBId], sessionId });
-  io.to(socketBId).emit('match_found', { partnerId: userAId, partnerName: nameMap[userAId], sessionId });
+  const socketA = io.sockets.sockets.get(socketAId);
+  const socketB = io.sockets.sockets.get(socketBId);
+  const nameA = (socketA && socketA.sessionName) ? socketA.sessionName : nameMap[userAId];
+  const nameB = (socketB && socketB.sessionName) ? socketB.sessionName : nameMap[userBId];
+
+  io.to(socketAId).emit('match_found', { mode, partnerId: userBId, partnerName: nameB, sessionId });
+  io.to(socketBId).emit('match_found', { mode, partnerId: userAId, partnerName: nameA, sessionId });
 
   process.stdout.write(
-    `[MATCHMAKING] Matched ${nameMap[userAId]} ↔ ${nameMap[userBId]}\n`
+    `[MATCHMAKING] Matched ${nameA} ↔ ${nameB} (mode: ${mode})\n`
   );
 
   // ── 10s ready confirmation timeout ───────────────────────────────────────────
@@ -204,8 +210,8 @@ async function attemptMatch(io, _depth = 0) {
       if (socketAId) io.to(socketAId).emit('partner_disconnected', { reason: 'ready_timeout' });
       if (socketBId) io.to(socketBId).emit('partner_disconnected', { reason: 'ready_timeout' });
 
-      if (socketAId) { await presence.addToPool(userAId); await attemptMatch(io); }
-      if (socketBId) { await presence.addToPool(userBId); await attemptMatch(io); }
+      if (socketAId) { await presence.addToPool(userAId, mode); await attemptMatch(io, mode); }
+      if (socketBId) { await presence.addToPool(userBId, mode); await attemptMatch(io, mode); }
 
       if (sessionId) await presence.endSession(sessionId, 'error');
     }

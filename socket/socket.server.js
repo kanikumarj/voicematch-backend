@@ -8,6 +8,7 @@ const { registerSignalingEvents }   = require('../modules/signaling/signaling.ev
 const { registerFriendsEvents }     = require('../modules/friends/friends.events');
 const { registerDirectCallEvents }  = require('../modules/friends/direct.call.service');
 const { registerChatEvents }        = require('../modules/chat/chat.events');
+const { getActiveUsersCount }       = require('../modules/presence/presence.service');
 
 let io = null;
 
@@ -51,7 +52,17 @@ function initSocketServer(httpServer) {
     registerFriendsEvents(socket, io);
     registerDirectCallEvents(socket, io);
     registerChatEvents(socket, io);
+
+    // Initial emit for this client
+    const count = await getActiveUsersCount();
+    socket.emit('active_users_count', { count });
   });
+
+  // Broadcast to all clients every 30s
+  setInterval(async () => {
+    const count = await getActiveUsersCount();
+    io.emit('active_users_count', { count });
+  }, 30000);
 
   return io;
 }

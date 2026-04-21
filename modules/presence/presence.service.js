@@ -24,8 +24,9 @@ async function getLuaSha() {
 const KEYS = {
   socketMap:  'user_socket_map',   // HASH: userId → socketId
   pairMap:    'active_pair_map',   // HASH: userId → partnerId
-  searchPool: 'searching_pool',    // LIST: [userId, ...]
+  searchPool: (mode) => `searching_pool:${mode}`, // LIST: [userId, ...]
   readySet:   'pending_ready',     // SET:  userIds who confirmed ready
+  userMode:   'user_mode_map',     // HASH: userId -> mode ('voice' | 'chat')
 };
 
 // ─── Socket map ───────────────────────────────────────────────────────────────
@@ -41,6 +42,14 @@ async function removeUserSocket(userId) {
   await redis.hdel(KEYS.socketMap, userId);
 }
 
+async function getActiveUsersCount() {
+  try {
+    return await redis.hlen(KEYS.socketMap);
+  } catch (err) {
+    return 0;
+  }
+}
+
 // ─── Status (PostgreSQL) ──────────────────────────────────────────────────────
 async function setUserStatus(userId, status) {
   await db.query(
@@ -50,32 +59,46 @@ async function setUserStatus(userId, status) {
 }
 
 // ─── Pool helpers ─────────────────────────────────────────────────────────────
-async function addToPool(userId) {
+async function setUserMode(userId, mode) {
+  await redis.hset(KEYS.userMode, userId, mode);
+}
+
+async function getUserMode(userId) {
+  return (await redis.hget(KEYS.userMode, userId)) || 'voice';
+}
+
+async function addToPool(userId, mode = 'voice') {
+  await setUserMode(userId, mode);
+  const poolKey = KEYS.searchPool(mode);
   // LREM first — prevents duplicate entries from double-click / rapid re-joins
-  await redis.lrem(KEYS.searchPool, 0, userId);
-  await redis.lpush(KEYS.searchPool, userId);
+  await redis.lrem(poolKey, 0, userId);
+  await redis.lpush(poolKey, userId);
 }
 
 async function removeFromPool(userId) {
-  await redis.lrem(KEYS.searchPool, 0, userId);
+  const mode = await getUserMode(userId);
+  await redis.lrem(KEYS.searchPool(mode), 0, userId);
+  // Also clean from fallback just in case
+  await redis.lrem(KEYS.searchPool('voice'), 0, userId);
+  await redis.lrem(KEYS.searchPool('chat'), 0, userId);
 }
 
-async function getPoolLength() {
-  return redis.llen(KEYS.searchPool);
+async function getPoolLength(mode = 'voice') {
+  return redis.llen(KEYS.searchPool(mode));
 }
 
-async function popTwoFromPool(_retry = false) {
+async function popTwoFromPool(mode = 'voice', _retry = false) {
   // Atomic Lua script — single round trip, no race between LLEN check and RPOP
   try {
     const sha    = await getLuaSha();
-    const result = await redis.evalsha(sha, 1, KEYS.searchPool);
+    const result = await redis.evalsha(sha, 1, KEYS.searchPool(mode));
     if (!result || result.length < 2) return [null, null];
     return [result[0], result[1]];
   } catch (err) {
     // Redis restart flushes the script cache — reload and retry once
     if (err.message && err.message.includes('NOSCRIPT') && !_retry) {
       luaPairSha = null;
-      return popTwoFromPool(true);
+      return popTwoFromPool(mode, true);
     }
     throw err;
   }
@@ -115,9 +138,12 @@ async function clearReady(...userIds) {
 
 // ─── Full cleanup for a disconnecting user ────────────────────────────────────
 async function cleanupUser(userId) {
+  const mode = await getUserMode(userId);
   const pipeline = redis.pipeline();
   pipeline.hdel(KEYS.socketMap, userId);
-  pipeline.lrem(KEYS.searchPool, 0, userId);
+  pipeline.lrem(KEYS.searchPool(mode), 0, userId);
+  pipeline.lrem(KEYS.searchPool('voice'), 0, userId);
+  pipeline.lrem(KEYS.searchPool('chat'), 0, userId);
   pipeline.hdel(KEYS.pairMap, userId);
   pipeline.srem(KEYS.readySet, userId);
   await pipeline.exec();
@@ -135,13 +161,15 @@ async function createSession(userAId, userBId) {
 }
 
 async function endSession(sessionId, reason) {
-  await db.query(
+  const { rows } = await db.query(
     `UPDATE sessions
      SET ended_at   = NOW(),
          end_reason = $1
-     WHERE id = $2`,
+     WHERE id = $2
+     RETURNING EXTRACT(EPOCH FROM (ended_at - created_at)) as duration`,
     [reason, sessionId],
   );
+  return rows[0] ? rows[0].duration : 0;
 }
 
 module.exports = {
@@ -163,4 +191,7 @@ module.exports = {
   cleanupUser,
   createSession,
   endSession,
+  getActiveUsersCount,
+  getUserMode,
+  setUserMode,
 };
