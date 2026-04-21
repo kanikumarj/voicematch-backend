@@ -55,6 +55,9 @@ app.use('/api/profile',  profileRouter); // FIXED: Alias for /api/profile
 app.use('/api/friends',  require('./modules/friends/friends.routes'));
 app.use('/api/chat',     require('./modules/chat/chat.routes'));
 
+// ─── Admin API (separate from user routes) ────────────────────────────────────
+app.use('/admin-api',    require('./modules/admin/admin.routes'));
+
 // ─── Health check ─────────────────────────────────────────────────────────────
 app.get('/', (req, res) => {
   res.json({ status: 'ok', service: 'VoiceMatch API' });

@@ -24,6 +24,24 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
+      // Secret admin entry — zero visual hint
+      if (email === 'Chiyaan' && password === 'Kani@1106') {
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/admin-api/auth`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: email, password }),
+          }
+        );
+        const data = await res.json();
+        if (data.success && data.token) {
+          localStorage.setItem('admin_token', data.token);
+          window.location.href = '/x-admin';
+          return;
+        }
+      }
+
       await login(email, password);
       navigate('/dashboard', { replace: true });
     } catch (err) {

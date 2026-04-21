@@ -18,6 +18,8 @@ import FriendsPage    from './pages/friends/FriendsPage';
 import ChatPage       from './pages/chat/ChatPage';
 import ProfilePage    from './pages/profile/ProfilePage';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminShell     from './pages/admin/AdminShell';
+import SecretAdminRoute from './routes/AdminRoute';
 import NotFoundPage   from './pages/NotFoundPage';
 
 function AdminRoute({ children }) {
@@ -77,6 +79,11 @@ export default function App() {
                 <ProtectedRoute>
                   <AdminRoute><AdminDashboard token={token} /></AdminRoute>
                 </ProtectedRoute>
+              } />
+
+              {/* Secret Admin — no links point here */}
+              <Route path="/x-admin" element={
+                <SecretAdminRoute><AdminShell /></SecretAdminRoute>
               } />
 
               {/* 404 */}
