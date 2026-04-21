@@ -65,6 +65,7 @@ function registerPresenceEvents(socket, io) {
 
       await presence.setUserStatus(userId, 'searching');
       await presence.addToPool(userId);       // LREM guard prevents duplicates
+      await recordJoinTime(userId);           // FIXED: track wait time for gender filter widening
 
       // Attempt match — if pool still has waiting users after match, notify them
       await attemptMatch(io);

@@ -60,8 +60,8 @@ export function createSocket(token) {
  * Throws if createSocket() has not been called.
  */
 export function getSocket() {
-  if (!socket) throw new Error('Socket not initialized. Call createSocket() first.');
-  return socket;
+  // FIXED: return null instead of throwing — callers already handle null
+  return socket || null;
 }
 
 /**

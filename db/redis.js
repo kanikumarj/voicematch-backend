@@ -11,18 +11,17 @@ const createRedisClient = () => {
     return null
   }
 
-  // FIXED: Clean URL only, no extra flags
   const client = new Redis(url, {
     maxRetriesPerRequest: 3,
     enableReadyCheck: false,
-    lazyConnect: true,
+    // FIXED: removed lazyConnect — Redis must connect on startup for matchmaking to work
     tls: url.startsWith('rediss://') ? { rejectUnauthorized: false } : undefined,
     retryStrategy: (times) => {
-      if (times > 3) {
+      if (times > 5) {
         console.warn('[REDIS] Max retries reached — continuing without Redis')
         return null // stop retrying, don't crash
       }
-      return Math.min(times * 500, 2000)
+      return Math.min(times * 500, 3000)
     }
   })
 
@@ -31,14 +30,23 @@ const createRedisClient = () => {
     console.log('[REDIS] ✓ Connected')
   })
 
+  client.on('ready', () => {
+    isConnected = true
+    console.log('[REDIS] ✓ Ready')
+  })
+
   client.on('error', (err) => {
-    isConnected = false
+    // FIXED: Don't set isConnected=false on transient errors — only on close
     console.warn('[REDIS] Error:', err.message)
-    // FIXED: Never throw — just log and continue
   })
 
   client.on('close', () => {
     isConnected = false
+    console.warn('[REDIS] Connection closed')
+  })
+
+  client.on('reconnecting', () => {
+    console.log('[REDIS] Reconnecting...')
   })
 
   return client
@@ -54,12 +62,10 @@ const get = async (key) => {
 }
 
 // Safe set — silently fails if Redis unavailable
-const set = async (key, value, ttlSeconds) => {
+const set = async (key, value, ...rest) => {
   if (!redis || !isConnected) return null
-  try {
-    if (ttlSeconds) return await redis.set(key, value, 'EX', ttlSeconds)
-    return await redis.set(key, value)
-  } catch { return null }
+  try { return await redis.set(key, value, ...rest) }
+  catch { return null }
 }
 
 // Safe del
@@ -71,13 +77,44 @@ const del = async (key) => {
 
 const exportedObj = { redis, get, set, del, isConnected: () => isConnected }
 
-// Safe proxy to support both object destruction and direct method calls like redis.hget()
+// FIXED: Proxy must handle pipeline() and script() which return synchronous objects,
+// not promises. The old proxy wrapped everything in async, which broke pipeline chains.
 module.exports = new Proxy(exportedObj, {
   get(target, prop) {
     if (prop in target) return target[prop]
-    
-    // Fallback to the real redis client, but catch errors silently if offline
+
+    // Fallback to the real redis client
     if (redis && typeof redis[prop] === 'function') {
+      // FIXED: pipeline() and multi() return synchronous chain objects — don't wrap in async
+      if (prop === 'pipeline' || prop === 'multi') {
+        return (...args) => {
+          if (!isConnected) {
+            // Return a mock pipeline that silently does nothing
+            return {
+              exec: async () => [],
+              hset: function() { return this },
+              hdel: function() { return this },
+              lrem: function() { return this },
+              srem: function() { return this },
+              lpush: function() { return this },
+              rpush: function() { return this },
+              del: function() { return this },
+              set: function() { return this },
+              get: function() { return this },
+            }
+          }
+          return redis[prop](...args)
+        }
+      }
+      // FIXED: script() returns synchronous result — handle specially
+      if (prop === 'script') {
+        return async (...args) => {
+          if (!isConnected) return null
+          try { return await redis[prop](...args) }
+          catch { return null }
+        }
+      }
+      // All other methods — wrap in safe async
       return async (...args) => {
         if (!isConnected) return null
         try {
@@ -87,7 +124,7 @@ module.exports = new Proxy(exportedObj, {
         }
       }
     }
-    
+
     return async () => null
   }
 })

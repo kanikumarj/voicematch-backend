@@ -16,14 +16,23 @@ let io = null;
  * Must be called ONCE from server.js after http.createServer().
  */
 function initSocketServer(httpServer) {
+  // FIXED: CORS must include production Netlify URL — was blocking all socket connections
+  const allowedOrigins = [
+    'https://voicematcho.netlify.app',
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://localhost:4000',
+  ];
+  if (process.env.CLIENT_ORIGIN) allowedOrigins.push(process.env.CLIENT_ORIGIN);
+
   io = new Server(httpServer, {
     cors: {
-      origin:      process.env.CLIENT_ORIGIN || 'http://localhost:5173',
+      origin:      allowedOrigins,
       methods:     ['GET', 'POST'],
       credentials: true,
     },
-    // Prevent zombie connections eating memory
-    pingTimeout:   20_000,
+    transports:  ['websocket', 'polling'], // FIXED: allow polling fallback
+    pingTimeout:   60_000,  // FIXED: longer timeout for mobile/slow connections
     pingInterval:  25_000,
   });
 

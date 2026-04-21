@@ -66,9 +66,9 @@ export default function DashboardPage() {
       setReconnecting(false);
       if (state === 'in_call') setAppState('connected');
     }
-    function onMatchFound({ partnerId, partnerName }) {
+    function onMatchFound({ partnerId, partnerName, sessionId }) {
       setNoUsers(false);
-      setPartner({ id: partnerId, name: partnerName });
+      setPartner({ id: partnerId, name: partnerName, sessionId });
       setAppState('matched');
     }
     function onBothReady({ initiator }) {
@@ -194,6 +194,7 @@ export default function DashboardPage() {
         token={token}
         partnerName={partner?.name}
         partnerId={partner?.id}
+        sessionId={partner?.sessionId}
         isInitiator={isInitiator}
         onCallEnd={handleEndCall}
       />

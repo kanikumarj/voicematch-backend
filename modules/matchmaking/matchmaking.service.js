@@ -171,8 +171,8 @@ async function attemptMatch(io, _depth = 0) {
   );
   const nameMap = Object.fromEntries(rows.map(r => [r.id, r.display_name || 'Anonymous']));
 
-  io.to(socketAId).emit('match_found', { partnerId: userBId, partnerName: nameMap[userBId] });
-  io.to(socketBId).emit('match_found', { partnerId: userAId, partnerName: nameMap[userAId] });
+  io.to(socketAId).emit('match_found', { partnerId: userBId, partnerName: nameMap[userBId], sessionId });
+  io.to(socketBId).emit('match_found', { partnerId: userAId, partnerName: nameMap[userAId], sessionId });
 
   process.stdout.write(
     `[MATCHMAKING] Matched ${nameMap[userAId]} ↔ ${nameMap[userBId]}\n`

@@ -73,6 +73,8 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(() => {
     clear();
+    // FIXED: redirect to login after clearing session
+    window.location.href = '/login';
   }, []);
 
   const updateUser = useCallback((patch) => {
