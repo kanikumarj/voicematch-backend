@@ -21,6 +21,7 @@ const { globalErrorHandler, notFoundHandler } = require('./middleware/errorHandl
 const { runStartupCleanup } = require('./modules/resilience/startup.cleanup');
 
 const app  = express();
+app.set('trust proxy', 1); // FIXED: Required for Render to correctly identify client IP
 const PORT = process.env.PORT || 4000;
 
 // ─── Security headers ─────────────────────────────────────────────────────────
