@@ -228,7 +228,7 @@ export default function DashboardPage() {
     );
   }
 
-  const onlineFriends = friendsData.friends.filter(f => f.status === 'online');
+  const onlineFriends = (friendsData.friends || []).filter(f => f.status === 'online');
   const pendingCount  = friendsData.pendingReceived?.length || 0;
 
   return (
