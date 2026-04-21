@@ -92,7 +92,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const updateProfile = useCallback(async (patch) => {
-    const data = await api.put('/api/profile', patch);
+    const data = await api.post('/api/auth/onboarding', patch); // FIXED: Correct onboarding endpoint
     const freshUser = data.user ?? data;
     setUser(freshUser);
     localStorage.setItem('vm_user', JSON.stringify(freshUser));
