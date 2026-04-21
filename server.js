@@ -51,6 +51,7 @@ app.use('/api/call',     callRouter);
 app.use('/api/admin',    adminRouter);
 app.use('/api/feedback', feedbackRouter);
 app.use('/api/users',    profileRouter);
+app.use('/api/profile',  profileRouter); // FIXED: Alias for /api/profile
 app.use('/api/friends',  require('./modules/friends/friends.routes'));
 app.use('/api/chat',     require('./modules/chat/chat.routes'));
 
