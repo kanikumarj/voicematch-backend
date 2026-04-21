@@ -287,7 +287,7 @@ export default function DashboardPage() {
               <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 24 }}>
                 Match with {mode === 'voice' ? 'voice' : 'chat'} users only
               </p>
-              <Button size="lg" fullWidth onClick={handleConnectClick}>
+              <Button size="lg" fullWidth onClick={joinPool}>
                 Connect Now
               </Button>
             </div>
