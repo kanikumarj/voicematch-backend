@@ -92,7 +92,10 @@ async function isCompatible(userAId, userBId) {
 // ─── Core matchmaking ─────────────────────────────────────────────────────────
 async function attemptMatch(io, mode = 'voice', _depth = 0) {
   // Safety guard: avoid infinite recursion if all pool members are on cooldown/incompatible
-  if (_depth > 10) return;
+  if (_depth > 10) {
+    setTimeout(() => attemptMatch(io, mode), 2000);
+    return;
+  }
 
   const poolLen = await presence.getPoolLength(mode);
   if (poolLen < 2) return;
@@ -135,7 +138,8 @@ async function attemptMatch(io, mode = 'voice', _depth = 0) {
   if (onCooldown) {
     // Push to BACK of pool so the next pair at the front can be tried
     await redis.rpush(poolKey, userAId, userBId);
-    return attemptMatch(io, mode, _depth + 1);
+    setTimeout(() => attemptMatch(io, mode), 2000);
+    return;
   }
 
   // ── Compatibility check (gender preference) ───────────────────────────────────
@@ -157,7 +161,8 @@ async function attemptMatch(io, mode = 'voice', _depth = 0) {
 
       // Put both back at the end of the pool and keep trying
       await redis.rpush(poolKey, userAId, userBId);
-      return attemptMatch(io, mode, _depth + 1);
+      setTimeout(() => attemptMatch(io, mode), 2000);
+      return;
     }
   }
 
