@@ -19,6 +19,7 @@ let io = null;
 function initSocketServer(httpServer) {
   // FIXED: CORS must include production Netlify URL — was blocking all socket connections
   const allowedOrigins = [
+    'https://voicematch-frontend.vercel.app',
     'https://voicematcho.netlify.app',
     'http://localhost:5173',
     'http://localhost:3000',

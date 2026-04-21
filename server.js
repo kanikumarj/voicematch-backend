@@ -31,15 +31,22 @@ app.use(helmet({
 }));
 
 // ─── Global middleware ────────────────────────────────────────────────────────
+const allowedOrigins = [
+  'https://voicematch-frontend.vercel.app',
+  'https://voicematcho.netlify.app',
+  'http://localhost:5173',
+  'http://localhost:3000'
+];
+
 app.use(cors({
-  origin: 'https://voicematcho.netlify.app',
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.options('*', cors({
-  origin: 'https://voicematcho.netlify.app',
+  origin: allowedOrigins,
   credentials: true
 }));
 app.use(express.json({ limit: '16kb' }));
