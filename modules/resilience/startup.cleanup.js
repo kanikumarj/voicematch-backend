@@ -49,9 +49,12 @@ async function runStartupCleanup() {
       let cursor = '0';
       let deleted = 0;
       do {
-        const [nextCursor, keys] = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+        const result = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+        if (!result) break; // FIXED: Handles null if Redis is offline/not connected
+        
+        const [nextCursor, keys] = result;
         cursor = nextCursor;
-        if (keys.length) {
+        if (keys && keys.length) {
           await redis.del(...keys);
           deleted += keys.length;
         }
