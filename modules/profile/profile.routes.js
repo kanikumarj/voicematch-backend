@@ -16,6 +16,7 @@ router.use(authenticateToken);
 
 router.get('/me',                  getProfileController);
 router.patch('/me',                updateProfileController);
+router.put('/me',                  updateProfileController); // FIXED: Alias for PUT — frontend sends PUT
 router.delete('/me',               deleteAccountController);
 router.get('/blocks',              getBlockedUsersController);
 router.delete('/block/:userId',    unblockUserController);

@@ -9,6 +9,8 @@ const createLimiter = (options = {}) => {
     max: options.max || 100,
     standardHeaders: true,
     legacyHeaders: false,
+    // FIXED: Prevent ERR_ERL_UNEXPECTED_X_FORWARDED_FOR behind Render proxy
+    validate: { xForwardedForHeader: false },
     message: {
       success: false,
       message: options.message || 'Too many requests, please try again later.'

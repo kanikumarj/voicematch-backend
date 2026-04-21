@@ -46,8 +46,9 @@ function globalErrorHandler(err, _req, res, _next) {
   });
 }
 
-function notFoundHandler(_req, res) {
-  res.status(404).json({ error: 'Resource not found' });
+// FIXED: Include method and path for easier debugging
+function notFoundHandler(req, res) {
+  res.status(404).json({ error: `Route ${req.method} ${req.path} not found` });
 }
 
 module.exports = { asyncHandler, globalErrorHandler, notFoundHandler };
