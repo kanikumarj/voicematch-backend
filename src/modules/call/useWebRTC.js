@@ -86,10 +86,24 @@ export function useWebRTC(socket, token) {
   async function getMic() {
     let stream;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      // FIXED: Use optimal WebRTC audio constraints
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        },
+        video: false
+      });
     } catch (err) {
-      // Permission denied or hardware error
       setCallStatus('ended');
+      // FIXED: Better error handling for mic permissions
+      if (err.name === 'NotAllowedError') {
+        throw new Error('Microphone permission required');
+      }
+      if (err.name === 'NotFoundError') {
+        throw new Error('No microphone found');
+      }
       throw new Error(`Microphone error: ${err.message}`);
     }
     localStreamRef.current = stream;

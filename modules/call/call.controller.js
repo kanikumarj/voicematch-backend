@@ -14,11 +14,23 @@ function getTurnCredentials(req, res) {
   const turnUrl = process.env.TURN_URL || (process.env.TURN_HOST ? `turn:${process.env.TURN_HOST}:${process.env.TURN_PORT || 3478}` : null);
 
   if (!secret || !turnUrl) {
-    // Graceful fallback to STUN if TURN is not fully configured
+    // FIXED: Fallback to Metered free TURN relay if custom TURN isn't configured.
+    // This ensures calls work across different networks (NAT/firewalls).
     return res.status(200).json({
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' },
+        {
+          urls: 'turn:openrelay.metered.ca:80',
+          username: 'openrelayproject',
+          credential: 'openrelayproject'
+        },
+        {
+          urls: 'turn:openrelay.metered.ca:443',
+          username: 'openrelayproject',
+          credential: 'openrelayproject'
+        }
       ],
     });
   }
