@@ -44,19 +44,6 @@ function initSocketServer(httpServer) {
     const { id: userId, email } = socket.data.user;
     process.stdout.write(`[SOCKET] Connected: ${email} (${socket.id})\n`);
 
-    // FIXED: Kill any existing socket for this user
-    try {
-      const allSockets = await io.fetchSockets();
-      for (const s of allSockets) {
-        if (s.data && s.data.user && s.data.user.id === userId && s.id !== socket.id) {
-          process.stdout.write(`[SOCKET] Killing duplicate socket for ${userId} (${s.id})\n`);
-          s.disconnect(true);
-        }
-      }
-    } catch (err) {
-      process.stderr.write(`[SOCKET] Error fetching sockets for duplicate check: ${err.message}\n`);
-    }
-
     // Register all event namespaces
     registerPresenceEvents(socket, io);
     registerMatchmakingEvents(socket, io);

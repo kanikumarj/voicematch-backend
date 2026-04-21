@@ -21,13 +21,13 @@ export function createSocket(token) {
 
   socket = io(SOCKET_URL, {
     auth:                { token },
-    transports:          ['websocket'],   // Skip polling — lower latency
+    transports:          ['websocket', 'polling'], // allow polling fallback
     reconnection:        true,
-    reconnectionAttempts: 10,
-    reconnectionDelay:   1_000,
+    reconnectionAttempts: 5,                       // limit reconnects to 5
+    reconnectionDelay:   2_000,                    // 2s delay
     reconnectionDelayMax: 10_000,
     randomizationFactor: 0.5,
-    timeout:             20_000,
+    timeout:             10_000,
   });
 
   // ── Lifecycle logging ───────────────────────────────────────────────────────
@@ -47,9 +47,9 @@ export function createSocket(token) {
   socket.on('disconnect', (reason) => {
     // 'io server disconnect' = server explicitly closed — do NOT auto-reconnect
     if (reason === 'io server disconnect') {
-      socket.connect();  // Manual reconnect needed; socket.io won't auto-retry
+      // Server kicked us intentionally — do not reconnect
+      socket.disconnect();
     }
-    // All other reasons: socket.io handles auto-reconnect via reconnection options
   });
 
   return socket;
