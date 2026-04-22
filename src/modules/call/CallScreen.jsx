@@ -4,6 +4,7 @@ import Avatar from '../../components/ui/Avatar';
 import Button from '../../components/ui/Button';
 import BottomSheet from '../../components/ui/BottomSheet';
 import useCallTimer from '../../hooks/useCallTimer';
+import useOnlineStats from '../../hooks/useOnlineStats';
 import api from '../../lib/api';
 import './CallScreen.css';
 
@@ -22,6 +23,7 @@ export default function CallScreen({ socket, token, partnerName, isInitiator, pa
   } = useWebRTC(socket, token);
 
   const { seconds, formatted } = useCallTimer(callStatus === 'connected');
+  const onlineStats = useOnlineStats();
 
   const interceptEnd = (reason) => {
     endCall();
@@ -120,6 +122,9 @@ export default function CallScreen({ socket, token, partnerName, isInitiator, pa
             <div className="call-header-info">
               <h2 className="call-partner-name">{partnerName}</h2>
               <span className="call-duration-badge">In call • {formatted}</span>
+              {onlineStats.voice > 0 && (
+                <span className="call-pool-stat">🟢 {onlineStats.voice} in voice pool</span>
+              )}
             </div>
           </div>
 

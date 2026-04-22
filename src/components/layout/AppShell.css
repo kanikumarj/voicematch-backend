@@ -17,6 +17,8 @@
   .app-shell-main {
     flex: 1;
     padding-bottom: 0;
-    max-width: 100%;
+    /* Fixed 72px offset for sidebar — doesn't shift on hover expand */
+    margin-left: 72px;
+    max-width: calc(100% - 72px);
   }
 }

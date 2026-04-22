@@ -9,7 +9,7 @@ import Button from '../components/ui/Button';
 import { useToast } from '../components/ui/Toast';
 import CallScreen from '../modules/call/CallScreen';
 import MatchChatScreen from './chat/MatchChatScreen';
-import useActiveUsers from '../hooks/useActiveUsers';
+import useOnlineStats from '../hooks/useOnlineStats';
 import useFriendNotifications from '../hooks/useFriendNotifications';
 import './DashboardPage.css';
 
@@ -39,8 +39,8 @@ export default function DashboardPage() {
   const [searchTimer, setSearchTimer]   = useState(0);
   const [noUsersAvailable, setNoUsers]  = useState(false);
   
-  // Use new hooks
-  const activeUsers = useActiveUsers();
+  // Use new online stats hook (replaces useActiveUsers)
+  const onlineStats = useOnlineStats();
   useFriendNotifications();
 
   const [mode, setMode] = useState(localStorage.getItem('vm_mode') || 'voice');
@@ -246,20 +246,24 @@ export default function DashboardPage() {
             <h2 className="dash-hello">
               {getGreeting()}, {user?.displayName || 'there'} 👋
             </h2>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
               {user?.streak_count > 1 && (
                 <span className="dash-streak">🔥 {user.streak_count} day streak</span>
-              )}
-              {activeUsers > 0 && (
-                <span style={{ fontSize: '12px', background: 'var(--surface)', padding: '4px 8px', borderRadius: '12px', border: '1px solid var(--border)' }}>
-                  <span className="active-dot" style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#4caf50', marginRight: 4 }} />
-                  {activeUsers} online
-                </span>
               )}
             </div>
           </div>
           <Avatar name={user?.displayName} size="md" onClick={() => navigate('/profile')} style={{ cursor: 'pointer' }} />
         </section>
+
+        {/* ── Online Stats Bar ── */}
+        {onlineStats.total > 0 && (
+          <div className="online-stats-bar anim-fade-in">
+            <div className="online-stats-global">
+              <span className="online-stats-dot" />
+              <span className="online-stats-text">{onlineStats.total} online now</span>
+            </div>
+          </div>
+        )}
 
         {/* ── Connect Card ── */}
         <section className="dash-connect-card anim-fade-in">
@@ -284,9 +288,15 @@ export default function DashboardPage() {
                   💬 Text Chat
                 </Button>
               </div>
-              <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 24 }}>
-                Match with {mode === 'voice' ? 'voice' : 'chat'} users only
-              </p>
+
+              {/* Mode-specific stats */}
+              <div className="mode-stats">
+                {mode === 'voice'
+                  ? `🎙️ ${onlineStats.voice} searching for voice calls`
+                  : `💬 ${onlineStats.chat} searching for text chat`
+                }
+              </div>
+
               <Button size="lg" fullWidth onClick={joinPool}>
                 Connect Now
               </Button>
@@ -304,6 +314,12 @@ export default function DashboardPage() {
               </div>
               <h3>Finding someone for you…</h3>
               <p className="connect-timer">Searching for {searchTimer}s</p>
+              <div className="mode-stats" style={{ marginBottom: 8 }}>
+                {mode === 'voice'
+                  ? `🎙️ ${onlineStats.voice} in voice pool`
+                  : `💬 ${onlineStats.chat} in chat pool`
+                }
+              </div>
               <div className="connect-action-row">
                 <Button variant="ghost" onClick={leavePool}>Cancel</Button>
                 <Button variant="danger" size="sm" onClick={exitAll}>Exit</Button>

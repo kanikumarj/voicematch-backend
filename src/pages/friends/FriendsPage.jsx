@@ -36,6 +36,7 @@ export default function FriendsPage() {
   const [loading,  setLoading] = useState(true);
   const [search,   setSearch]  = useState('');
   const [friendStatus, setFriendStatus] = useState({});
+  const [contextMenu, setContextMenu] = useState(null);
 
   useEffect(() => { fetchFriends(); }, []);
 
@@ -73,26 +74,53 @@ export default function FriendsPage() {
   }
 
   async function acceptReq(requestId) {
+    // Optimistic removal
+    setData(prev => ({
+      ...prev,
+      pendingReceived: prev.pendingReceived.filter(r => r.requestId !== requestId)
+    }));
     try {
+      const req = data.pendingReceived.find(r => r.requestId === requestId);
       await fetch(`${API}/api/friends/requests/${requestId}/accept`, {
         method: 'POST', headers: { Authorization: `Bearer ${token}` }
       });
-      toast.success('Friend added!');
+      toast.success(`✓ Now friends with ${req?.fromUser?.displayName || 'them'}!`);
       fetchFriends();
-    } catch {}
+    } catch {
+      fetchFriends(); // Revert on failure
+    }
   }
 
   async function rejectReq(requestId) {
+    // Optimistic removal
+    setData(prev => ({
+      ...prev,
+      pendingReceived: prev.pendingReceived.filter(r => r.requestId !== requestId)
+    }));
     try {
       await fetch(`${API}/api/friends/requests/${requestId}/reject`, {
         method: 'POST', headers: { Authorization: `Bearer ${token}` }
       });
+    } catch {
       fetchFriends();
-    } catch {}
+    }
   }
 
-  async function unfriend(friendshipId, e) {
-    e.stopPropagation();
+  async function cancelSentReq(requestId) {
+    setData(prev => ({
+      ...prev,
+      pendingSent: prev.pendingSent.filter(r => r.requestId !== requestId)
+    }));
+    try {
+      await fetch(`${API}/api/friends/requests/${requestId}/reject`, {
+        method: 'POST', headers: { Authorization: `Bearer ${token}` }
+      });
+    } catch {
+      fetchFriends();
+    }
+  }
+
+  async function unfriend(friendshipId) {
     if (!confirm('Unfriend this person?')) return;
     try {
       await fetch(`${API}/api/friends/${friendshipId}`, {
@@ -101,34 +129,60 @@ export default function FriendsPage() {
       toast.success('Unfriended');
       fetchFriends();
     } catch {}
+    setContextMenu(null);
   }
 
-  function callFriend(friendId, e) {
-    e.stopPropagation();
+  function callFriend(friendId) {
     try { getSocket().emit('direct_call_request', { toUserId: friendId }); toast.info('Calling…'); }
     catch { toast.error('Connection error'); }
+    setContextMenu(null);
   }
 
-  const filtered = data.friends.filter(f =>
+  // Close context menu on any click
+  useEffect(() => {
+    if (!contextMenu) return;
+    const handler = () => setContextMenu(null);
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
+  }, [contextMenu]);
+
+  // Separate online friends
+  const allFriends = data.friends || [];
+  const onlineFriends = allFriends.filter(f => {
+    const status = friendStatus[f.id] || f.status || 'offline';
+    return status === 'online' || status === 'in_call';
+  });
+
+  const filtered = allFriends.filter(f =>
     !search || f.displayName?.toLowerCase().includes(search.toLowerCase())
   );
 
+  const sortedFriends = [...filtered].sort((a, b) => {
+    // Unread first, then by last message
+    if (b.unreadCount !== a.unreadCount) return (b.unreadCount || 0) - (a.unreadCount || 0);
+    return new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0);
+  });
+
   const pendingCount = data.pendingReceived?.length || 0;
+  const sentCount = data.pendingSent?.length || 0;
 
   return (
     <AppShell badges={{ friends: pendingCount }}>
       <TopBar title="Friends" rightSlot={
-        <button className="friends-req-btn" onClick={() => setTab(tab === 'received' ? 'friends' : 'received')}>
-          Requests{pendingCount > 0 && <Badge count={pendingCount} />}
+        <button className="friends-req-btn" onClick={() => setTab(tab === 'requests' ? 'friends' : 'requests')}>
+          Requests{(pendingCount + sentCount) > 0 && <Badge count={pendingCount + sentCount} />}
         </button>
       } />
 
-      {/* ── Tabs ── */}
+      {/* ── Tab Switcher ── */}
       <div className="friends-tabs">
-        {[['friends', 'Friends'], ['received', 'Received'], ['sent', 'Sent']].map(([id, label]) => (
+        {[
+          ['friends', 'Friends'],
+          ['requests', `Requests`],
+        ].map(([id, label]) => (
           <button key={id} className={`friends-tab ${tab === id ? 'active' : ''}`} onClick={() => setTab(id)}>
             {label}
-            {id === 'received' && pendingCount > 0 && <Badge count={pendingCount} />}
+            {id === 'requests' && pendingCount > 0 && <Badge count={pendingCount} />}
           </button>
         ))}
       </div>
@@ -147,18 +201,53 @@ export default function FriendsPage() {
             />
           </div>
 
+          {/* Online Now (horizontal scroll) */}
+          {onlineFriends.length > 0 && !search && (
+            <div className="online-now-section">
+              <div className="online-now-header">
+                <span className="online-now-label">ONLINE NOW</span>
+                <span className="online-now-count">{onlineFriends.length}</span>
+              </div>
+              <div className="online-now-scroll">
+                {onlineFriends.map(f => {
+                  const status = friendStatus[f.id] || f.status || 'online';
+                  return (
+                    <button
+                      key={f.id}
+                      className="online-now-item"
+                      onClick={() => navigate(`/chat/${f.friendshipId}`)}
+                      aria-label={`Chat with ${f.displayName}`}
+                    >
+                      <Avatar name={f.displayName} size="md" status={status} />
+                      <span className="online-now-name">{f.displayName?.split(' ')[0]}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* All Friends label */}
+          {!search && sortedFriends.length > 0 && (
+            <div className="all-friends-label">ALL FRIENDS · {allFriends.length}</div>
+          )}
+
           {loading
             ? Array.from({ length: 5 }, (_, i) => <SkeletonChatItem key={i} />)
-            : filtered.length === 0
+            : sortedFriends.length === 0
               ? <div className="friends-empty"><span>👥</span><p>{search ? 'No matches' : 'No friends yet'}</p><p>Friends are made during voice calls!</p></div>
-              : filtered.sort((a, b) => {
-                  // Unread first, then by last message
-                  if (b.unreadCount !== a.unreadCount) return (b.unreadCount || 0) - (a.unreadCount || 0);
-                  return new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0);
-                }).map(f => {
+              : sortedFriends.map(f => {
                   const status = friendStatus[f.id] || f.status || 'offline';
                   return (
-                    <div key={f.id} className="friend-item" onClick={() => navigate(`/chat/${f.friendshipId}`)}>
+                    <div
+                      key={f.id}
+                      className="friend-item"
+                      onClick={() => navigate(`/chat/${f.friendshipId}`)}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        setContextMenu({ id: f.id, friendshipId: f.friendshipId, name: f.displayName, x: e.clientX, y: e.clientY });
+                      }}
+                    >
                       <Avatar name={f.displayName} size="md" status={status} />
                       <div className="friend-item-info">
                         <span className="friend-item-name">{f.displayName}</span>
@@ -169,7 +258,7 @@ export default function FriendsPage() {
                       <div className="friend-item-meta">
                         {f.lastMessageAt && <span className="friend-item-time">{timeAgo(f.lastMessageAt)}</span>}
                         {f.unreadCount > 0 && <Badge count={f.unreadCount} />}
-                        <button className="friend-call-btn" onClick={e => callFriend(f.id, e)} aria-label="Call">
+                        <button className="friend-call-btn" onClick={e => { e.stopPropagation(); callFriend(f.id); }} aria-label="Call">
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.41 2 2 0 0 1 3.6 1.24h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81a16 16 0 0 0 5.95 5.95l.87-.87a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                         </button>
                       </div>
@@ -180,21 +269,45 @@ export default function FriendsPage() {
         </div>
       )}
 
-      {/* ── Received tab ── */}
-      {tab === 'received' && (
+      {/* ── Requests tab ── */}
+      {tab === 'requests' && (
         <div className="friends-content">
+          {/* Sub-tabs: Received / Sent */}
+          <div className="requests-subtabs">
+            <button
+              className={`requests-subtab ${tab === 'requests' && !params.get('sub') ? 'active' : ''}`}
+              onClick={() => {}}
+              data-active="received"
+            >
+              Received ({pendingCount})
+            </button>
+            <button
+              className="requests-subtab"
+              onClick={() => setTab('sent')}
+            >
+              Sent ({sentCount})
+            </button>
+          </div>
+
           {data.pendingReceived.length === 0
-            ? <div className="friends-empty"><span>📭</span><p>No pending requests</p></div>
+            ? (
+              <div className="friends-empty">
+                <span>🤝</span>
+                <p>No friend requests</p>
+                <p>People you connect with can send you requests</p>
+              </div>
+            )
             : data.pendingReceived.map(req => (
-                <div key={req.requestId} className="req-item">
-                  <Avatar name={req.fromUser.displayName} size="md" />
-                  <div className="req-info">
+                <div key={req.requestId} className="req-card anim-fade-in">
+                  <Avatar name={req.fromUser.displayName} size="lg" />
+                  <div className="req-card-info">
                     <strong>{req.fromUser.displayName}</strong>
-                    <span>Connected during a call · {timeAgo(req.sentAt)}</span>
+                    <span className="req-card-subtitle">Wants to connect</span>
+                    <span className="req-card-meta">From a voice call · {timeAgo(req.sentAt)}</span>
                   </div>
-                  <div className="req-btns">
-                    <Button size="sm" onClick={() => acceptReq(req.requestId)}>Accept</Button>
-                    <Button size="sm" variant="ghost" onClick={() => rejectReq(req.requestId)}>✕</Button>
+                  <div className="req-card-actions">
+                    <Button size="sm" onClick={() => acceptReq(req.requestId)}>Confirm</Button>
+                    <Button size="sm" variant="ghost" className="req-delete-btn" onClick={() => rejectReq(req.requestId)}>Delete</Button>
                   </div>
                 </div>
               ))
@@ -205,19 +318,47 @@ export default function FriendsPage() {
       {/* ── Sent tab ── */}
       {tab === 'sent' && (
         <div className="friends-content">
+          <div className="requests-subtabs">
+            <button className="requests-subtab" onClick={() => setTab('requests')}>
+              Received ({pendingCount})
+            </button>
+            <button className="requests-subtab active">
+              Sent ({sentCount})
+            </button>
+          </div>
+
           {data.pendingSent.length === 0
             ? <div className="friends-empty"><span>📤</span><p>No sent requests</p></div>
             : data.pendingSent.map(req => (
-                <div key={req.requestId} className="req-item">
-                  <Avatar name={req.toUser.displayName} size="md" />
-                  <div className="req-info">
+                <div key={req.requestId} className="req-card anim-fade-in">
+                  <Avatar name={req.toUser.displayName} size="lg" />
+                  <div className="req-card-info">
                     <strong>{req.toUser.displayName}</strong>
-                    <span>Pending · {timeAgo(req.sentAt)}</span>
+                    <span className="req-card-meta">Request sent · {timeAgo(req.sentAt)}</span>
                   </div>
-                  <span className="pending-pill">Pending</span>
+                  <Button size="sm" variant="ghost" className="req-cancel-btn" onClick={() => cancelSentReq(req.requestId)}>Cancel</Button>
                 </div>
               ))
           }
+        </div>
+      )}
+
+      {/* ── Context Menu ── */}
+      {contextMenu && (
+        <div
+          className="friend-context-menu anim-fade-in"
+          style={{ top: contextMenu.y, left: contextMenu.x }}
+          onClick={e => e.stopPropagation()}
+        >
+          <button onClick={() => { navigate(`/chat/${contextMenu.friendshipId}`); setContextMenu(null); }}>
+            💬 Message
+          </button>
+          <button onClick={() => callFriend(contextMenu.id)}>
+            📞 Voice Call
+          </button>
+          <button className="ctx-danger" onClick={() => unfriend(contextMenu.friendshipId)}>
+            🚫 Unfriend
+          </button>
         </div>
       )}
     </AppShell>

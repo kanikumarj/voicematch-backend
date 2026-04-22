@@ -8,6 +8,47 @@
   width: 100%;
 }
 
+/* ── Online Stats Bar ────────────────────────────────────── */
+.online-stats-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2) var(--space-4);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+}
+
+.online-stats-global {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.online-stats-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--online-dot);
+  animation: pulse-glow 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.online-stats-text {
+  white-space: nowrap;
+}
+
+/* ── Mode Stats (below mode selector) ────────────────────── */
+.mode-stats {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-5);
+  text-align: center;
+}
+
 /* ── Greeting ─────────────────────────────────────────────── */
 .dash-greeting {
   display: flex;

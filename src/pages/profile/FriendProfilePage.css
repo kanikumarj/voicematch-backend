@@ -1,0 +1,126 @@
+/* ============================================================
+   FRIEND PROFILE PAGE
+   ============================================================ */
+
+.friend-profile-page {
+  min-height: 100dvh;
+  background: var(--bg-primary);
+}
+
+/* ── Header ───────────────────────────────────────────────── */
+.fp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+  position: sticky;
+  top: 0;
+  background: var(--bg-primary);
+  z-index: 10;
+}
+
+.fp-back {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+}
+
+.fp-header-title {
+  font-weight: 700;
+  font-size: var(--text-md);
+}
+
+/* ── Loading ──────────────────────────────────────────────── */
+.fp-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  gap: var(--space-4);
+}
+
+.fp-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border-default);
+  border-top-color: var(--accent-primary);
+  border-radius: 50%;
+  animation: spin-ring 1s linear infinite;
+}
+
+/* ── Body ─────────────────────────────────────────────────── */
+.fp-body {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4);
+}
+
+/* ── Hero ─────────────────────────────────────────────────── */
+.fp-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding-bottom: var(--space-6);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.fp-name {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+}
+
+.fp-status {
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.fp-status-online { color: var(--online-dot); }
+.fp-status-in_call { color: var(--incall-dot); }
+.fp-status-offline { color: var(--text-muted); }
+
+/* ── Stats ────────────────────────────────────────────────── */
+.fp-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+  padding: var(--space-5) 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.fp-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.fp-stat-value {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.fp-stat-label {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* ── Actions ──────────────────────────────────────────────── */
+.fp-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-5);
+}
+
+.fp-unfriend-btn {
+  color: var(--error) !important;
+  margin-top: var(--space-4);
+}

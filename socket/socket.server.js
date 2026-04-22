@@ -13,6 +13,32 @@ const { getActiveUsersCount }       = require('../modules/presence/presence.serv
 let io = null;
 
 /**
+ * Emit online_stats to all connected clients.
+ * Includes total online count + per-mode searching counts.
+ */
+async function emitOnlineStats() {
+  if (!io) return;
+  try {
+    const redis = require('../db/redis');
+    const [total, voiceSearching, chatSearching] = await Promise.all([
+      getActiveUsersCount(),
+      redis.hlen('searching_pool:voice').catch(() => 0),
+      redis.hlen('searching_pool:chat').catch(() => 0),
+    ]);
+    io.emit('online_stats', {
+      total: total || 0,
+      voice: voiceSearching || 0,
+      chat:  chatSearching || 0,
+    });
+    // Also emit legacy event for backward compat
+    io.emit('active_users_count', { count: total || 0 });
+  } catch (err) {
+    // Silently handle — stats are non-critical
+    process.stderr.write(`[SOCKET] emitOnlineStats error: ${err.message}\n`);
+  }
+}
+
+/**
  * Initialize Socket.IO on the existing Node http.Server instance.
  * Must be called ONCE from server.js after http.createServer().
  */
@@ -60,16 +86,21 @@ function initSocketServer(httpServer) {
     registerDirectCallEvents(socket, io);
     registerChatEvents(socket, io);
 
-    // Initial emit for this client
+    // Initial emit for this client (both new + legacy events)
     const count = await getActiveUsersCount();
     socket.emit('active_users_count', { count });
+    
+    // Emit updated online stats to all when someone connects
+    emitOnlineStats();
+
+    // Emit updated stats on disconnect too
+    socket.on('disconnect', () => {
+      emitOnlineStats();
+    });
   });
 
-  // Broadcast to all clients every 30s
-  setInterval(async () => {
-    const count = await getActiveUsersCount();
-    io.emit('active_users_count', { count });
-  }, 30000);
+  // Broadcast online stats to all clients every 15 seconds
+  setInterval(emitOnlineStats, 15000);
 
   return io;
 }

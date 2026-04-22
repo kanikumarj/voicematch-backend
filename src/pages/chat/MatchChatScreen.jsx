@@ -2,11 +2,13 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getSocket } from '../../lib/socket'
 import { useAuth } from '../../context/AuthContext'
+import useOnlineStats from '../../hooks/useOnlineStats'
 
 const MatchChatScreen = ({ roomId, partnerName, partnerSocketId, partnerId }) => {
   const navigate = useNavigate()
   const socket = getSocket()
   const { user } = useAuth()
+  const onlineStats = useOnlineStats()
 
   const [messages, setMessages]           = useState([])
   const [inputText, setInputText]         = useState('')
@@ -195,7 +197,7 @@ const MatchChatScreen = ({ roomId, partnerName, partnerSocketId, partnerId }) =>
                 ? 'var(--accent-primary)'
                 : 'var(--text-muted)'
             }}>
-              {partnerTyping ? 'typing...' : 'Connected'}
+              {partnerTyping ? 'typing...' : onlineStats.chat > 0 ? `🟢 ${onlineStats.chat} in chat pool` : 'Connected'}
             </div>
           </div>
         </div>
