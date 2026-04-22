@@ -10,6 +10,8 @@ import ReportsPage   from './reports/ReportsPage';
 import BannedPage    from './banned/BannedPage';
 import AnalyticsPage from './analytics/AnalyticsPage';
 import SystemPage    from './system/SystemPage';
+// NEW: [Feature 5] Announcements
+import AnnouncementsPage from './announcements/AnnouncementsPage';
 
 const NAV_ITEMS = [
   { key: 'overview',  icon: '📊', label: 'Overview' },
@@ -19,6 +21,8 @@ const NAV_ITEMS = [
   { key: 'banned',    icon: '🔇', label: 'Banned Users' },
   { key: 'analytics', icon: '📈', label: 'Analytics' },
   { key: 'system',    icon: '⚙️',  label: 'System' },
+  // NEW: [Feature 5] Announcements
+  { key: 'announcements', icon: '📣', label: 'Announcements' },
 ];
 
 const PAGE_MAP = {
@@ -29,6 +33,8 @@ const PAGE_MAP = {
   banned:    BannedPage,
   analytics: AnalyticsPage,
   system:    SystemPage,
+  // NEW: [Feature 5] Announcements
+  announcements: AnnouncementsPage,
 };
 
 export default function AdminShell() {

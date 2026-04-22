@@ -20,6 +20,10 @@ export default function ProfilePage({ token, onBack }) {
   const [loading,   setLoading]   = useState(true);
   const [saving,    setSaving]    = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  // NEW: [Feature 4] Profile sharing
+  const [username, setUsername]       = useState(null);
+  const [generatingUsername, setGeneratingUsername] = useState(false);
+  const [copied, setCopied]           = useState(false);
 
   const headers = { Authorization: `Bearer ${token}` };
 
@@ -44,6 +48,11 @@ export default function ProfilePage({ token, onBack }) {
   }
 
   useEffect(() => { fetchProfile(); }, []);
+
+  // NEW: [Feature 4] Check if user already has username
+  useEffect(() => {
+    if (profile?.username) setUsername(profile.username);
+  }, [profile]);
 
   async function saveProfile() {
     setSaving(true);
@@ -125,6 +134,70 @@ export default function ProfilePage({ token, onBack }) {
             </div>
           ))}
         </div>
+
+        {/* NEW: [Feature 4] Share Profile Section */}
+        <section className="pp-section">
+          <h3>📎 Share Profile</h3>
+          {username ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{
+                padding: '12px', background: 'var(--bg-secondary)',
+                borderRadius: 'var(--radius-md)', fontSize: '13px',
+                color: 'var(--text-primary)', wordBreak: 'break-all',
+                border: '1px solid var(--border-subtle)',
+              }}>
+                {window.location.origin}/u/{username}
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  className="pp-edit-btn"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(`${window.location.origin}/u/${username}`);
+                      setCopied(true);
+                      toast.success('Link copied!');
+                      setTimeout(() => setCopied(false), 2000);
+                    } catch {
+                      prompt('Copy:', `${window.location.origin}/u/${username}`);
+                    }
+                  }}
+                >
+                  {copied ? '✅ Copied!' : '📋 Copy Link'}
+                </button>
+                <button
+                  className="pp-edit-btn"
+                  onClick={() => window.open(`${window.location.origin}/u/${username}`, '_blank')}
+                >
+                  🔗 View Public
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              className="pp-edit-btn"
+              onClick={async () => {
+                setGeneratingUsername(true);
+                try {
+                  const res = await fetch(`${API}/api/public/generate-username`, {
+                    method: 'POST', headers,
+                  });
+                  const data = await res.json();
+                  if (data.success) {
+                    setUsername(data.data.username);
+                    toast.success('Username generated!');
+                  } else {
+                    toast.error(data.message || 'Failed');
+                  }
+                } catch { toast.error('Failed to generate username'); }
+                finally { setGeneratingUsername(false); }
+              }}
+              disabled={generatingUsername}
+            >
+              {generatingUsername ? '⏳ Generating...' : '🔗 Create Shareable Link'}
+            </button>
+          )}
+        </section>
+
 
         {/* ── Preferences ── */}
         <section className="pp-section">

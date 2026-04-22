@@ -19,6 +19,8 @@ async function getProfile(userId) {
        u.last_active_date,
        u.created_at                      AS member_since,
        u.role,
+       u.username,
+       u.profile_public,
        ROUND(AVG(f.rating)::numeric, 1)  AS avg_rating,
        COUNT(f.id)::int                  AS rating_count
      FROM users u

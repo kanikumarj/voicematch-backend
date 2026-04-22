@@ -19,6 +19,11 @@ const profileRouter         = require('./modules/profile/profile.routes');
 const { apiLimiter }        = require('./middleware/rateLimiter');
 const { globalErrorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const { runStartupCleanup } = require('./modules/resilience/startup.cleanup');
+// NEW: [Feature 4] Public profile routes
+const publicProfileRoutes = require('./modules/profile/public-profile.routes');
+// NEW: [Feature 5] Announcement system
+const { router: announcementRouter, setIO: setAnnouncementIO } = require('./modules/admin/announcement.routes');
+const { startAnnouncementCron } = require('./modules/admin/announcement.cron');
 
 const app  = express();
 app.set('trust proxy', 1); // FIXED: Required for Render to correctly identify client IP
@@ -87,6 +92,10 @@ app.use('/api/chat',     require('./modules/chat/chat.routes'));
 
 // ─── Admin API (separate from user routes) ────────────────────────────────────
 app.use('/admin-api',    require('./modules/admin/admin.routes'));
+// NEW: [Feature 4] Public profile
+app.use('/api/public',   publicProfileRoutes);
+// NEW: [Feature 5] Announcements
+app.use('/admin-api/announcements', announcementRouter);
 
 // ─── Health check ─────────────────────────────────────────────────────────────
 app.get('/', (req, res) => {
@@ -104,7 +113,11 @@ app.use(globalErrorHandler);
 
 // ─── HTTP server + Socket.IO ──────────────────────────────────────────────────
 const httpServer = http.createServer(app);
-initSocketServer(httpServer);
+const io = initSocketServer(httpServer);
+
+// NEW: [Feature 5] Init announcement system with socket.io instance
+setAnnouncementIO(io);
+startAnnouncementCron(io);
 
 httpServer.listen(PORT, async () => {
   process.stdout.write(`[SERVER] Listening on port ${PORT}\n`);

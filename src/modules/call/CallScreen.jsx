@@ -6,11 +6,19 @@ import BottomSheet from '../../components/ui/BottomSheet';
 import useCallTimer from '../../hooks/useCallTimer';
 import useOnlineStats from '../../hooks/useOnlineStats';
 import api from '../../lib/api';
+// NEW: [Feature 1] In-call report
+import InCallReport from './InCallReport';
+// NEW: [Feature 2] Music sync
+import MusicSync from './MusicSync';
+// NEW: [Feature 3] Dare mode
+import DareMode from './DareMode';
 import './CallScreen.css';
 
 export default function CallScreen({ socket, token, partnerName, isInitiator, partnerId, sessionId, onCallEnd }) {
   const [friendState, setFriendState] = useState('idle');
   const [incomingReq, setIncomingReq] = useState(null);
+  // NEW: [Feature 1] In-call report state
+  const [hasReported, setHasReported] = useState(false);
   
   const [showRating, setShowRating] = useState(false);
   const [callEndedReason, setCallEndedReason] = useState(null);
@@ -141,6 +149,17 @@ export default function CallScreen({ socket, token, partnerName, isInitiator, pa
             </div>
           </div>
 
+          {/* NEW: [Feature 1] In-call report button */}
+          {!hasReported && callStatus === 'connected' && (
+            <div style={{ position: 'absolute', top: '16px', right: '16px' }}>
+              <InCallReport
+                partner={{ id: partnerId, name: partnerName }}
+                sessionId={sessionId}
+                onReported={() => setHasReported(true)}
+              />
+            </div>
+          )}
+
           {/* Audio visualizer */}
           <div className="call-visualizer">
             {Array.from({ length: 12 }, (_, i) => (
@@ -179,6 +198,18 @@ export default function CallScreen({ socket, token, partnerName, isInitiator, pa
               }
               <span>{friendState === 'idle' ? 'Add Friend' : friendState === 'sent' ? 'Sent ✓' : 'Friends ✓'}</span>
             </button>
+
+            {/* NEW: [Feature 2] Music sync */}
+            <MusicSync socket={socket} isCallConnected={callStatus === 'connected'} />
+
+            {/* NEW: [Feature 3] Dare mode */}
+            <DareMode
+              socket={socket}
+              partner={{ id: partnerId, name: partnerName, displayName: partnerName }}
+              sessionId={sessionId}
+              userName={partnerName}
+              isCallConnected={callStatus === 'connected'}
+            />
 
             <button className="call-ctrl ctrl-end" onClick={handleEnd} aria-label="End call">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">

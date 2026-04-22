@@ -11,6 +11,8 @@ import CallScreen from '../modules/call/CallScreen';
 import MatchChatScreen from './chat/MatchChatScreen';
 import useOnlineStats from '../hooks/useOnlineStats';
 import useFriendNotifications from '../hooks/useFriendNotifications';
+// NEW: [Feature 5] System announcements
+import useAnnouncements from '../hooks/useAnnouncements';
 import './DashboardPage.css';
 
 const API = import.meta.env.VITE_API_URL;
@@ -42,6 +44,8 @@ export default function DashboardPage() {
   // Use new online stats hook (replaces useActiveUsers)
   const onlineStats = useOnlineStats();
   useFriendNotifications();
+  // NEW: [Feature 5] Listen for system announcements
+  useAnnouncements();
 
   const [mode, setMode] = useState(localStorage.getItem('vm_mode') || 'voice');
   const [matchMode, setMatchMode] = useState('voice'); // The mode of the found match

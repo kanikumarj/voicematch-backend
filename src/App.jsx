@@ -24,6 +24,8 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminShell     from './pages/admin/AdminShell';
 import SecretAdminRoute from './routes/AdminRoute';
 import NotFoundPage   from './pages/NotFoundPage';
+// NEW: [Feature 4] Public profile
+import PublicProfilePage from './pages/profile/PublicProfilePage';
 
 function AdminRoute({ children }) {
   const { user } = useAuth();
@@ -53,6 +55,9 @@ export default function App() {
                 <Route path="/verify-email"    element={<VerifyEmail />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password"  element={<ResetPassword />} />
+
+                {/* NEW: [Feature 4] Public profile — no auth */}
+                <Route path="/u/:username" element={<PublicProfilePage />} />
 
                 {/* Onboarding (protected, bypass onboarded check) */}
                 <Route path="/onboarding" element={

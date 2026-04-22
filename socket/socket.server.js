@@ -9,6 +9,12 @@ const { registerFriendsEvents }     = require('../modules/friends/friends.events
 const { registerDirectCallEvents }  = require('../modules/friends/direct.call.service');
 const { registerChatEvents }        = require('../modules/chat/chat.events');
 const { getActiveUsersCount }       = require('../modules/presence/presence.service');
+// NEW: [Feature 1] In-call report
+const { registerInCallReportEvents } = require('../modules/moderation/in-call-report.events');
+// NEW: [Feature 2] Music sync
+const { registerMusicEvents }        = require('../modules/music/music.events');
+// NEW: [Feature 3] Dare mode
+const { registerDareEvents }         = require('../modules/dare/dare.events');
 
 let io = null;
 
@@ -85,6 +91,12 @@ function initSocketServer(httpServer) {
     registerFriendsEvents(socket, io);
     registerDirectCallEvents(socket, io);
     registerChatEvents(socket, io);
+    // NEW: [Feature 1] In-call report
+    registerInCallReportEvents(socket, io);
+    // NEW: [Feature 2] Music sync
+    registerMusicEvents(socket, io);
+    // NEW: [Feature 3] Dare mode
+    registerDareEvents(socket, io);
 
     // Initial emit for this client (both new + legacy events)
     const count = await getActiveUsersCount();
