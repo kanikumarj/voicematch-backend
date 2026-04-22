@@ -44,7 +44,7 @@ export default function ChatPage() {
   const [typing, setTyping]         = useState(false);
   const [friendInfo, setFriendInfo] = useState(state?.friend || null);
   const [showScrollBtn, setScroll]  = useState(false);
-  const [loading, setLoading]       = useState(true);
+  const [loading, setLoading]       = useState(!state?.friend);
 
   const endRef      = useRef(null);
   const areaRef     = useRef(null);
@@ -71,26 +71,27 @@ export default function ChatPage() {
       })
       .catch(() => setLoading(false));
 
-    // Load friend profile
-    if (!friendInfo) {
-      fetch(`${API}/api/friends/${friendshipId}/profile`, {
-        headers: { Authorization: `Bearer ${token}` },
+    // Load friend profile — always fetch fresh data for id + online status
+    fetch(`${API}/api/friends/${friendshipId}/profile`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d) setFriendInfo(prev => ({ ...prev, ...d }));
       })
-        .then(r => r.ok ? r.json() : null)
-        .then(d => {
-          if (d) setFriendInfo(d);
-        })
-        .catch(() => {
-          // Fallback: get from /api/friends list
-          fetch(`${API}/api/friends`, { headers: { Authorization: `Bearer ${token}` } })
-            .then(r => r.ok ? r.json() : null)
-            .then(d => {
-              const friend = d?.friends?.find(f => f.friendshipId === friendshipId);
-              if (friend) setFriendInfo({ displayName: friend.displayName, id: friend.id });
-            })
-            .catch(() => {});
-        });
-    }
+      .catch(() => {
+        // Fallback: get from /api/friends list
+        fetch(`${API}/api/friends`, { headers: { Authorization: `Bearer ${token}` } })
+          .then(r => r.ok ? r.json() : null)
+          .then(d => {
+            const friend = d?.friends?.find(f => String(f.friendshipId) === String(friendshipId));
+            if (friend) setFriendInfo(prev => ({
+              ...prev, displayName: friend.displayName, id: friend.id
+            }));
+          })
+          .catch(() => {});
+      })
+      .finally(() => setLoading(false));
   }, [friendshipId, token, clearUnread]);
 
   // ── Socket listeners ────────────────────────────────────────────────────────
@@ -225,7 +226,7 @@ export default function ChatPage() {
     grouped.push(m);
   });
 
-  const friendName = friendInfo?.displayName || friendInfo?.display_name || '…';
+  const friendName = friendInfo?.displayName || friendInfo?.display_name || (loading ? '…' : 'Friend');
 
   return (
     <div className="chat-page" style={{ paddingBottom: keyboardHeight || 0 }}>
@@ -238,11 +239,23 @@ export default function ChatPage() {
         </button>
 
         <div className="chat-header-info">
-          <Avatar name={friendName} size="sm" />
+          <div className="chat-header-avatar-wrap">
+            <Avatar name={friendName} size="sm" />
+            {friendInfo?.id && (
+              <span className={`chat-header-dot ${friendInfo?.isOnline ? 'online' : 'offline'}`} />
+            )}
+          </div>
           <div className="chat-header-text">
             <strong className="chat-header-name">{friendName}</strong>
             <div className="chat-header-status">
-              {friendInfo?.id && <OnlineStatus friendId={friendInfo.id} />}
+              {typing
+                ? <span style={{ color: 'var(--accent-primary)', fontStyle: 'italic' }}>typing...</span>
+                : friendInfo?.id
+                  ? <OnlineStatus friendId={friendInfo.id} />
+                  : loading
+                    ? <span style={{ color: 'var(--text-muted)' }}>loading…</span>
+                    : null
+              }
             </div>
           </div>
         </div>

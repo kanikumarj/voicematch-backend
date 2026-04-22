@@ -66,6 +66,28 @@
   gap: 4px;
 }
 
+/* Avatar with online dot */
+.chat-header-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+.chat-header-dot {
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--bg-elevated);
+}
+.chat-header-dot.online  { background: var(--success); }
+.chat-header-dot.offline { background: var(--text-muted); }
+
+/* Desktop sidebar offset */
+@media (min-width: 768px) {
+  .chat-page { margin-left: 72px; }
+}
+
 .chat-call-btn {
   width: 36px;
   height: 36px;

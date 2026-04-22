@@ -1,0 +1,81 @@
+/* ============================================================
+   RESPONSIVE — Cross-platform layout system
+   ============================================================ */
+
+/* Breakpoints:
+   Mobile  : 0 - 767px
+   Tablet  : 768 - 1023px
+   Desktop : 1024px+
+   Wide    : 1440px+
+*/
+
+/* ── Content offset for sidebar ──────────────────────────── */
+@media (min-width: 768px) {
+  .main-content {
+    margin-left: 72px;
+  }
+}
+
+/* ── Chat layout — desktop 2-column ──────────────────────── */
+@media (min-width: 1024px) {
+  .chat-layout {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    height: 100dvh;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  .chat-sidebar {
+    border-right: 1px solid var(--border-subtle);
+    overflow-y: auto;
+  }
+  .chat-main {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+/* ── Messages page — desktop split ───────────────────────── */
+@media (min-width: 1024px) {
+  .messages-layout {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    height: 100dvh;
+  }
+}
+
+/* ── Touch targets — WCAG compliance ─────────────────────── */
+@media (hover: none) and (pointer: coarse) {
+  button, a, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* ── iOS safe area insets ─────────────────────────────────── */
+.bottom-bar {
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+.top-bar {
+  padding-top: max(12px, env(safe-area-inset-top));
+}
+
+/* ── Prevent horizontal scroll ────────────────────────────── */
+html, body {
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Smooth scrolling everywhere ─────────────────────────── */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Wide screens — constrain max widths ──────────────────── */
+@media (min-width: 1440px) {
+  .app-shell-main {
+    max-width: 1280px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
