@@ -69,6 +69,19 @@ export default function CallScreen({ socket, token, partnerName, isInitiator, pa
 
   useEffect(() => { if (isInitiator) startCall(); }, []);
 
+  // ── Check if already friends
+  useEffect(() => {
+    if (!partnerId) return;
+    fetch(`${import.meta.env.VITE_API_URL}/api/friends/check/${partnerId}`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.isFriend) setFriendState('friends');
+      })
+      .catch(() => {});
+  }, [partnerId]);
+
   function handleEnd() { interceptEnd('user_ended'); }
 
   async function submitRating() {

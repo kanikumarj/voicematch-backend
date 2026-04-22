@@ -167,7 +167,7 @@ export default function FriendsPage() {
   const sentCount = data.pendingSent?.length || 0;
 
   return (
-    <AppShell badges={{ friends: pendingCount }}>
+    <AppShell>
       <TopBar title="Friends" rightSlot={
         <button className="friends-req-btn" onClick={() => setTab(tab === 'requests' ? 'friends' : 'requests')}>
           Requests{(pendingCount + sentCount) > 0 && <Badge count={pendingCount + sentCount} />}

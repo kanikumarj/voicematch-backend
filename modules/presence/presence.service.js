@@ -52,9 +52,10 @@ async function getActiveUsersCount() {
 
 // ─── Status (PostgreSQL) ──────────────────────────────────────────────────────
 async function setUserStatus(userId, status) {
+  const isOnline = status !== 'offline';
   await db.query(
-    'UPDATE users SET status = $1 WHERE id = $2',
-    [status, userId],
+    'UPDATE users SET status = $1, is_online = $2, last_seen = NOW() WHERE id = $3',
+    [status, isOnline, userId],
   );
 }
 

@@ -29,11 +29,11 @@ function registerChatEvents(socket, io) {
 
       const friendInfo = await getFriendSocketByFriendship(friendshipId);
       if (!friendInfo) return socket.emit('error', { message: 'Unauthorized' });
-      const { friendSocketId, isA } = friendInfo;
+      const { friendId, friendSocketId, isA } = friendInfo;
 
       const { rows } = await db.query(
-        `INSERT INTO chat_messages (friendship_id, sender_id, content) 
-         VALUES ($1, $2, $3) RETURNING id, sent_at`,
+        `INSERT INTO chat_messages (friendship_id, sender_id, content, status) 
+         VALUES ($1, $2, $3, 'sent') RETURNING id, sent_at`,
         [friendshipId, userId, content]
       );
       const message = rows[0];
@@ -49,10 +49,23 @@ function registerChatEvents(socket, io) {
       socket.emit('chat_message_confirmed', { 
         tempId, 
         messageId: message.id, 
-        sentAt: message.sent_at 
+        sentAt: message.sent_at,
+        status: 'sent'
       });
 
       if (friendSocketId) {
+        // Emit new_message for notifications and real-time chat
+        io.to(friendSocketId).emit('new_message', {
+          id: message.id,
+          senderId: userId,
+          senderName: socket.data.user.displayName,
+          text: content,
+          createdAt: message.sent_at,
+          friendshipId,
+          fromMe: false
+        });
+
+        // Legacy event for backward compatibility
         io.to(friendSocketId).emit('chat_message_received', {
           message: {
             id: message.id,
@@ -62,11 +75,62 @@ function registerChatEvents(socket, io) {
             friendshipId
           }
         });
+
+        // Mark as delivered
+        await db.query(
+          `UPDATE chat_messages SET status = 'delivered' WHERE id = $1`,
+          [message.id]
+        );
+        
+        socket.emit('message_delivered', { 
+          messageId: message.id, 
+          friendshipId 
+        });
       }
     } catch (err) {
       process.stderr.write(`[CHAT] send_message error: ${err.message}\n`);
     }
   });
+
+  // ── viewing_conversation / chat_mark_read ───────────────────────────────────
+  const handleMarkRead = async ({ friendshipId }) => {
+    try {
+      const friendInfo = await getFriendSocketByFriendship(friendshipId);
+      if (!friendInfo) return;
+      const { friendId, friendSocketId, isA } = friendInfo;
+      
+      const unreadCol = isA ? 'unread_count_a' : 'unread_count_b';
+      await db.query(
+        `UPDATE chat_rooms SET ${unreadCol} = 0 WHERE friendship_id = $1`,
+        [friendshipId]
+      );
+
+      // Mark all messages as read
+      await db.query(
+        `UPDATE chat_messages 
+         SET status = 'read' 
+         WHERE friendship_id = $1 AND sender_id = $2 AND status != 'read'`,
+        [friendshipId, friendId]
+      );
+      
+      if (friendSocketId) {
+        // Emit to partner that their messages were read
+        io.to(friendSocketId).emit('messages_read', { 
+          friendshipId,
+          byUserId: userId,
+          readAt: new Date().toISOString() 
+        });
+        // Legacy
+        io.to(friendSocketId).emit('chat_read_receipt', { 
+          friendshipId, 
+          readAt: new Date().toISOString() 
+        });
+      }
+    } catch (err) { }
+  };
+
+  socket.on('chat_mark_read', handleMarkRead);
+  socket.on('viewing_conversation', handleMarkRead);
 
   // ── chat_typing_start ──────────────────────────────────────────────────────
   socket.on('chat_typing_start', async ({ friendshipId }) => {
@@ -84,27 +148,6 @@ function registerChatEvents(socket, io) {
       const friendInfo = await getFriendSocketByFriendship(friendshipId);
       if (friendInfo?.friendSocketId) {
         io.to(friendInfo.friendSocketId).emit('friend_stopped_typing', { friendshipId, userId });
-      }
-    } catch (err) { }
-  });
-
-  // ── chat_mark_read ─────────────────────────────────────────────────────────
-  socket.on('chat_mark_read', async ({ friendshipId }) => {
-    try {
-      const friendInfo = await getFriendSocketByFriendship(friendshipId);
-      if (!friendInfo) return;
-      
-      const unreadCol = friendInfo.isA ? 'unread_count_a' : 'unread_count_b';
-      await db.query(
-        `UPDATE chat_rooms SET ${unreadCol} = 0 WHERE friendship_id = $1`,
-        [friendshipId]
-      );
-      
-      if (friendInfo.friendSocketId) {
-        io.to(friendInfo.friendSocketId).emit('chat_read_receipt', { 
-          friendshipId, 
-          readAt: new Date().toISOString() 
-        });
       }
     } catch (err) { }
   });

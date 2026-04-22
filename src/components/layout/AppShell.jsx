@@ -1,3 +1,4 @@
+import { useNotifications } from '../../context/NotificationContext';
 import { useMobile } from '../../hooks/useMobile';
 import Sidebar from './Sidebar';
 import BottomNav from './BottomNav';
@@ -8,16 +9,22 @@ import './AppShell.css';
  * Mobile  (< 768px): bottom nav
  * Desktop (≥ 768px): left sidebar
  */
-export default function AppShell({ children, badges = {} }) {
+export default function AppShell({ children }) {
   const { isMobile } = useMobile();
+  const { totalUnread, pendingRequests } = useNotifications();
+
+  const badgeData = {
+    messages: totalUnread,
+    friends: pendingRequests
+  };
 
   return (
     <div className="app-shell">
       {/* Desktop sidebar — hidden on mobile via CSS */}
       {!isMobile && (
         <Sidebar
-          pendingCount={badges.friends || 0}
-          unreadCount={badges.messages || 0}
+          pendingCount={pendingRequests}
+          unreadCount={totalUnread}
         />
       )}
 
@@ -26,7 +33,7 @@ export default function AppShell({ children, badges = {} }) {
       </main>
 
       {/* Mobile bottom nav — hidden on desktop via CSS */}
-      <BottomNav badges={badges} />
+      <BottomNav badges={badgeData} />
     </div>
   );
 }

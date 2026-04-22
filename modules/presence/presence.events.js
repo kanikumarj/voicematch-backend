@@ -55,6 +55,7 @@ function registerPresenceEvents(socket, io) {
       if (!currentSocket) return;
 
       await presence.setUserStatus(userId, 'searching');
+      await notifyFriendsStatusChange(userId, 'searching', io);
       await presence.addToPool(userId, mode);       // LREM guard prevents duplicates
       await recordJoinTime(userId);           // FIXED: track wait time for gender filter widening
       
@@ -89,6 +90,7 @@ function registerPresenceEvents(socket, io) {
     try {
       await presence.removeFromPool(userId);
       await presence.setUserStatus(userId, 'online');
+      await notifyFriendsStatusChange(userId, 'online', io);
       socket.emit('search_cancelled', { status: 'idle' });
     } catch (err) {
       process.stderr.write(`[PRESENCE] leave_pool error ${userId}: ${err.message}\n`);

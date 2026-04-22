@@ -14,12 +14,24 @@ const MatchChatScreen = ({ roomId, partnerName, partnerSocketId, partnerId }) =>
   const [inputText, setInputText]         = useState('')
   const [friendAdded, setFriendAdded]     = useState(false)
   const [friendPending, setFriendPending] = useState(false)
+  const [isFriend, setIsFriend]           = useState(false)
   const [partnerTyping, setPartnerTyping] = useState(false)
   const [isEnded, setIsEnded]             = useState(false)
 
   const messagesEndRef  = useRef(null)
   const typingTimeout   = useRef(null)
   const inputRef        = useRef(null)
+
+  // ── Check if already friends
+  useEffect(() => {
+    if (!partnerId) return;
+    fetch(`${import.meta.env.VITE_API_URL}/api/friends/check/${partnerId}`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    })
+      .then(r => r.json())
+      .then(data => setIsFriend(data.isFriend))
+      .catch(() => {});
+  }, [partnerId]);
 
   // ── Auto scroll to bottom on new message
   useEffect(() => {
@@ -205,7 +217,7 @@ const MatchChatScreen = ({ roomId, partnerName, partnerSocketId, partnerId }) =>
         {/* Action buttons */}
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           {/* Add Friend button */}
-          {!friendAdded && (
+          {!friendAdded && !isFriend && (
             <button
               onClick={addFriend}
               disabled={friendPending || isEnded}
@@ -229,14 +241,17 @@ const MatchChatScreen = ({ roomId, partnerName, partnerSocketId, partnerId }) =>
             </button>
           )}
 
-          {friendAdded && (
+          {(friendAdded || isFriend) && (
             <span style={{
               padding: '8px 14px',
               borderRadius: '20px',
               background: 'var(--success)',
               color: 'white',
               fontSize: '13px',
-              fontWeight: '600'
+              fontWeight: '600',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
             }}>
               ✓ Friends
             </span>

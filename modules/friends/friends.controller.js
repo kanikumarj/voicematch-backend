@@ -57,10 +57,20 @@ async function getProfile(req, res, next) {
   }
 }
 
+async function checkFriendship(req, res, next) {
+  try {
+    const isFriend = await friendsService.checkFriendship(req.user.id, req.params.userId);
+    res.json({ isFriend });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   getFriends,
   acceptRequest,
   rejectRequest,
   removeFriend,
-  getProfile
+  getProfile,
+  checkFriendship
 };

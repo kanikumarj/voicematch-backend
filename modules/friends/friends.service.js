@@ -142,8 +142,9 @@ async function unfriend(friendshipId, userId) {
 
 async function getFriendProfile(friendshipId, userId) {
   const { rows } = await db.query(
-    `SELECT u.display_name AS "displayName", u.gender, u.member_since AS "memberSince",
-            u.total_calls AS "totalCalls", u.streak
+    `SELECT u.id, u.display_name AS "displayName", u.gender, u.member_since AS "memberSince",
+            u.total_calls AS "totalCalls", u.streak,
+            u.is_online AS "isOnline", u.last_seen AS "lastSeen"
      FROM friendships f
      JOIN users u ON u.id = CASE WHEN f.user_a_id = $2 THEN f.user_b_id ELSE f.user_a_id END
      WHERE f.id = $1 AND (f.user_a_id = $2 OR f.user_b_id = $2)`,
@@ -152,10 +153,20 @@ async function getFriendProfile(friendshipId, userId) {
   return rows[0] || null;
 }
 
+async function checkFriendship(userId, otherId) {
+  const [min, max] = orderUsers(userId, otherId);
+  const { rows } = await db.query(
+    `SELECT id FROM friendships WHERE user_a_id = $1 AND user_b_id = $2`,
+    [min, max]
+  );
+  return rows.length > 0;
+}
+
 module.exports = {
   getFriendsData,
   acceptFriendRequest,
   rejectFriendRequest,
   unfriend,
-  getFriendProfile
+  getFriendProfile,
+  checkFriendship
 };

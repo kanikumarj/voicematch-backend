@@ -71,6 +71,11 @@
   to   { transform: translateY(-30px) scale(0.9); opacity: 0; max-height: 0;    }
 }
 
+@keyframes slide-in-right {
+  from { transform: translateX(110%); opacity: 0; }
+  to   { transform: translateX(0);   opacity: 1; }
+}
+
 /* ── Progress Bar ────────────────────────────────────────── */
 @keyframes progress-shrink {
   from { width: 100%; }

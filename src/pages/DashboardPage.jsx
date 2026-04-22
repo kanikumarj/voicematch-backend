@@ -232,7 +232,7 @@ export default function DashboardPage() {
   const pendingCount  = friendsData.pendingReceived?.length || 0;
 
   return (
-    <AppShell badges={{ friends: pendingCount }}>
+    <AppShell>
       <TopBar title="🎙️ VoiceMatch" />
 
       {reconnecting && (

@@ -38,8 +38,8 @@ export default function App() {
     <ThemeProvider>
       <ToastProvider>
         <ToastBridge />
-        <NotificationProvider>
-          <BrowserRouter>
+        <BrowserRouter>
+          <NotificationProvider>
             <GlobalCallManager>
               <Routes>
                 {/* Root */}
@@ -102,8 +102,8 @@ export default function App() {
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>
             </GlobalCallManager>
-          </BrowserRouter>
-        </NotificationProvider>
+          </NotificationProvider>
+        </BrowserRouter>
       </ToastProvider>
     </ThemeProvider>
   );

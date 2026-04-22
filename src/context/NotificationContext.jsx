@@ -1,30 +1,38 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { getSocket } from '../lib/socket';
+import { useAuth } from './AuthContext';
+import { ToastStack } from '../components/notifications/ToastStack';
 import './NotificationContext.css';
 
 const NotificationContext = createContext(null);
 
-/**
- * NotificationProvider — manages real-time notification state.
- * Tracks:
- *   - unreadMessages: { [friendId]: count }
- *   - pendingRequests: number
- * Exposes methods to clear unread counts.
- */
 export function NotificationProvider({ children }) {
-  const [unreadMessages, setUnreadMessages] = useState({});
+  const [unreadCounts, setUnreadCounts] = useState({});
   const [pendingRequests, setPendingRequests] = useState(0);
   const [toasts, setToasts] = useState([]);
-  const toastCounter = useRef(0);
+  
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const locationRef = useRef(location);
+
+  // Keep locationRef current to avoid stale closures in socket listeners
+  useEffect(() => {
+    locationRef.current = location;
+  }, [location]);
 
   // ── Show notification toast ────────────────────────────────────────────────
-  const showToast = useCallback((toast) => {
-    const id = ++toastCounter.current;
+  const addToast = useCallback((toast) => {
+    const id = `toast_${Date.now()}_${Math.random()}`;
     const duration = toast.duration || 5000;
+    
     setToasts(prev => [...prev.slice(-2), { ...toast, id, duration }]);
+    
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
     }, duration);
+    
     return id;
   }, []);
 
@@ -32,59 +40,90 @@ export function NotificationProvider({ children }) {
     setToasts(prev => prev.filter(t => t.id !== id));
   }, []);
 
+  // ── Clear methods ──────────────────────────────────────────────────────────
+  const clearUnread = useCallback((friendshipId) => {
+    setUnreadCounts(prev => {
+      const next = { ...prev };
+      delete next[friendshipId];
+      return next;
+    });
+  }, []);
+
   // ── Socket listeners ───────────────────────────────────────────────────────
   useEffect(() => {
+    if (!user) return;
     let socket;
     try { socket = getSocket(); } catch { return; }
     if (!socket) return;
 
-    // New message from friend
-    const onNewMessage = ({ fromId, fromName, preview }) => {
-      setUnreadMessages(prev => ({
-        ...prev,
-        [fromId]: (prev[fromId] || 0) + 1
-      }));
-      showToast({
-        type: 'message',
-        title: fromName,
-        body: preview || 'Sent you a message',
-        avatar: fromName?.[0] || '?',
-        duration: 5000,
-      });
+    // NEW MESSAGE
+    const onNewMessage = (msg) => {
+      const { friendshipId, senderId, senderName, text } = msg;
+
+      // Check if user is currently viewing this conversation
+      const currentPath = locationRef.current.pathname;
+      const isViewingChat = currentPath === `/chat/${friendshipId}`;
+
+      if (!isViewingChat) {
+        // Increment unread badge
+        setUnreadCounts(prev => ({
+          ...prev,
+          [friendshipId]: (prev[friendshipId] || 0) + 1
+        }));
+
+        // Show notification toast
+        addToast({
+          type: 'message',
+          title: senderName || 'New message',
+          body: text?.substring(0, 60) || 'Sent a message',
+          avatar: senderName?.[0]?.toUpperCase() || '?',
+          avatarColor: stringToColor(senderId || friendshipId),
+          onClick: () => {
+            navigate(`/chat/${friendshipId}`);
+            clearUnread(friendshipId);
+          },
+          duration: 5000
+        });
+      }
     };
 
-    // Friend request received
+    // FRIEND REQUEST RECEIVED
     const onFriendRequest = ({ fromId, fromName }) => {
       setPendingRequests(c => c + 1);
-      showToast({
+      addToast({
         type: 'friend_request',
-        title: 'New friend request',
+        title: 'Friend request',
         body: `${fromName || 'Someone'} wants to connect`,
         avatar: '👥',
-        duration: 8000,
+        avatarColor: '#8B5CF6',
+        onClick: () => navigate('/friends'),
+        duration: 8000
       });
     };
 
-    // Friend request accepted
+    // FRIEND REQUEST ACCEPTED
     const onFriendAccepted = ({ fromName }) => {
-      showToast({
+      addToast({
         type: 'success',
-        title: 'Request accepted!',
-        body: `You and ${fromName || 'them'} are now friends`,
+        title: 'Now connected!',
+        body: `You and ${fromName || 'them'} are friends`,
         avatar: '✓',
-        duration: 5000,
+        avatarColor: '#10B981',
+        duration: 4000
       });
     };
 
-    // Friend came online
+    // FRIEND ONLINE
     const onFriendOnline = ({ name, userId }) => {
       if (name) {
-        showToast({
+        addToast({
           type: 'online',
           title: `${name} is online`,
-          body: 'Tap to start a chat',
-          avatar: name[0],
-          duration: 3000,
+          body: 'Tap to start chatting',
+          avatar: name[0].toUpperCase(),
+          avatarColor: stringToColor(userId),
+          onClick: () => navigate(`/profile/${userId}`), // Navigate to profile or chat? Plan says ChatPage/userId
+          duration: 3000
         });
       }
     };
@@ -100,38 +139,21 @@ export function NotificationProvider({ children }) {
       socket.off('friend_request_accepted_notify', onFriendAccepted);
       socket.off('friend_online', onFriendOnline);
     };
-  }, [showToast]);
+  }, [user, addToast, navigate, clearUnread]);
 
-  // ── Clear methods ──────────────────────────────────────────────────────────
-  const clearUnread = useCallback((friendId) => {
-    setUnreadMessages(prev => {
-      const next = { ...prev };
-      delete next[friendId];
-      return next;
-    });
-  }, []);
-
-  const clearAllUnread = useCallback(() => {
-    setUnreadMessages({});
-  }, []);
-
-  const totalUnread = Object.values(unreadMessages).reduce((a, b) => a + b, 0);
-
-  const value = {
-    unreadMessages,
-    pendingRequests,
-    setPendingRequests,
-    clearUnread,
-    clearAllUnread,
-    totalUnread,
-    showToast,
-  };
+  const totalUnread = Object.values(unreadCounts).reduce((a, b) => a + b, 0);
 
   return (
-    <NotificationContext.Provider value={value}>
+    <NotificationContext.Provider value={{
+      unreadCounts,
+      totalUnread,
+      pendingRequests,
+      setPendingRequests,
+      clearUnread,
+      addToast
+    }}>
       {children}
-      {/* Notification Toast Stack */}
-      <NotificationToastStack toasts={toasts} onDismiss={dismissToast} />
+      <ToastStack toasts={toasts} onDismiss={dismissToast} />
     </NotificationContext.Provider>
   );
 }
@@ -142,74 +164,15 @@ export function useNotifications() {
   return ctx;
 }
 
-// ── Toast Stack Component ──────────────────────────────────────────────────
-function NotificationToastStack({ toasts, onDismiss }) {
-  return (
-    <div className="notif-toast-stack">
-      {toasts.map(toast => (
-        <NotificationToastItem key={toast.id} toast={toast} onDismiss={onDismiss} />
-      ))}
-    </div>
-  );
-}
-
-// ── Single Toast Item ──────────────────────────────────────────────────────
-function NotificationToastItem({ toast, onDismiss }) {
-  const [exiting, setExiting] = useState(false);
-
-  useEffect(() => {
-    const exitTimer = setTimeout(() => {
-      setExiting(true);
-    }, (toast.duration || 5000) - 200);
-    return () => clearTimeout(exitTimer);
-  }, [toast.duration]);
-
-  const typeColors = {
-    message: 'var(--accent-primary)',
-    friend_request: '#8B5CF6',
-    success: 'var(--success)',
-    online: 'var(--online-dot)',
-  };
-
-  const accentColor = typeColors[toast.type] || 'var(--accent-primary)';
-
-  return (
-    <div
-      className={`notif-toast ${exiting ? 'notif-toast-exit' : ''}`}
-      onClick={() => onDismiss(toast.id)}
-      role="alert"
-    >
-      {/* Avatar */}
-      <div className="notif-toast-avatar" style={{ background: accentColor }}>
-        {toast.type === 'friend_request' ? '👥' :
-         toast.type === 'online' ? '🟢' :
-         toast.type === 'success' ? '✓' :
-         toast.avatar || '💬'}
-      </div>
-
-      {/* Content */}
-      <div className="notif-toast-content">
-        <span className="notif-toast-title">{toast.title}</span>
-        <span className="notif-toast-body">{toast.body}</span>
-      </div>
-
-      {/* Dismiss */}
-      <button
-        className="notif-toast-close"
-        onClick={(e) => { e.stopPropagation(); onDismiss(toast.id); }}
-        aria-label="Dismiss"
-      >
-        ✕
-      </button>
-
-      {/* Progress bar */}
-      <div
-        className="notif-toast-progress"
-        style={{
-          background: accentColor,
-          animationDuration: `${toast.duration || 5000}ms`,
-        }}
-      />
-    </div>
-  );
-}
+// Color from string (consistent per user)
+const stringToColor = (str = '') => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const colors = [
+    '#7C3AED', '#2563EB', '#DC2626', '#059669',
+    '#D97706', '#7C3AED', '#DB2777', '#0891B2'
+  ];
+  return colors[Math.abs(hash) % colors.length];
+};

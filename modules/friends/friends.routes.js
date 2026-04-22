@@ -13,5 +13,6 @@ router.post('/requests/:requestId/accept', friendsController.acceptRequest);
 router.post('/requests/:requestId/reject', friendsController.rejectRequest);
 router.delete('/:friendshipId', friendsController.removeFriend);
 router.get('/:friendshipId/profile', friendsController.getProfile);
+router.get('/check/:userId', friendsController.checkFriendship);
 
 module.exports = router;
