@@ -215,7 +215,7 @@ export default function FriendsPage() {
                     <button
                       key={f.id}
                       className="online-now-item"
-                      onClick={() => navigate(`/chat/${f.friendshipId}`)}
+                      onClick={() => navigate(`/chat/${f.friendshipId}`, { state: { friend: { id: f.id, displayName: f.displayName } } })}
                       aria-label={`Chat with ${f.displayName}`}
                     >
                       <Avatar name={f.displayName} size="md" status={status} />
@@ -242,7 +242,7 @@ export default function FriendsPage() {
                     <div
                       key={f.id}
                       className="friend-item"
-                      onClick={() => navigate(`/chat/${f.friendshipId}`)}
+                      onClick={() => navigate(`/chat/${f.friendshipId}`, { state: { friend: { id: f.id, displayName: f.displayName } } })}
                       onContextMenu={(e) => {
                         e.preventDefault();
                         setContextMenu({ id: f.id, friendshipId: f.friendshipId, name: f.displayName, x: e.clientX, y: e.clientY });
@@ -350,7 +350,7 @@ export default function FriendsPage() {
           style={{ top: contextMenu.y, left: contextMenu.x }}
           onClick={e => e.stopPropagation()}
         >
-          <button onClick={() => { navigate(`/chat/${contextMenu.friendshipId}`); setContextMenu(null); }}>
+          <button onClick={() => { navigate(`/chat/${contextMenu.friendshipId}`, { state: { friend: { id: contextMenu.id, displayName: contextMenu.name } } }); setContextMenu(null); }}>
             💬 Message
           </button>
           <button onClick={() => callFriend(contextMenu.id)}>

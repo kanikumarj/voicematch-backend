@@ -128,13 +128,12 @@ export default function DareMode({
           onClick={handleDareRequest}
           disabled={dareState !== 'idle'}
           style={{
-            width: '56px', height: '56px', borderRadius: '50%', border: 'none',
-            background: dareActive ? 'rgba(124,58,237,0.2)' : 'rgba(255,255,255,0.1)',
+            width: '56px', height: '56px', borderRadius: '50%',
+            background: dareActive ? 'rgba(124,58,237,0.2)' : 'var(--bg-tertiary)',
             color: dareActive ? 'var(--accent-primary)' : 'var(--text-primary)',
             fontSize: '22px', cursor: dareState === 'idle' ? 'pointer' : 'default',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            backdropFilter: 'blur(8px)',
-            border: dareActive ? '1px solid rgba(124,58,237,0.3)' : '1px solid var(--border-subtle)',
+            border: dareActive ? '1px solid rgba(124,58,237,0.3)' : '1px solid var(--border-default)',
             position: 'relative', transition: 'all 0.2s'
           }}
         >

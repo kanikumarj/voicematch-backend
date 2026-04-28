@@ -95,8 +95,6 @@ export default function ChatPage() {
   useEffect(() => {
     if (!token || !friendshipId) return;
     setLoading(true);
-
-    // Clear unread for this friend instantly
     clearUnread(friendshipId);
 
     // Load messages
@@ -104,33 +102,50 @@ export default function ChatPage() {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(r => r.ok ? r.json() : null)
-      .then(d => {
-        if (d?.messages) setMessages(d.messages);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-
-    // FIX: [Area 5] Load friend profile — always fetch fresh data for id + online status
-    fetch(`${API}/api/friends/${friendshipId}/profile`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(r => r.ok ? r.json() : null)
-      .then(d => {
-        if (d) setFriendInfo(prev => ({ ...prev, ...d }));
-      })
-      .catch(() => {
-        // Fallback: get from /api/friends list
-        fetch(`${API}/api/friends`, { headers: { Authorization: `Bearer ${token}` } })
-          .then(r => r.ok ? r.json() : null)
-          .then(d => {
-            const friend = d?.friends?.find(f => String(f.friendshipId) === String(friendshipId));
-            if (friend) setFriendInfo(prev => ({
-              ...prev, displayName: friend.displayName, id: friend.id
-            }));
-          })
-          .catch(() => {});
-      })
+      .then(d => { if (d?.messages) setMessages(d.messages); })
+      .catch(() => {})
       .finally(() => setLoading(false));
+
+    // FIX: Load friend profile with robust fallback chain
+    const loadFriendInfo = async () => {
+      try {
+        // Primary: /api/friends/:friendshipId/profile
+        const r = await fetch(`${API}/api/friends/${friendshipId}/profile`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (r.ok) {
+          const d = await r.json();
+          // API returns { id, displayName, isOnline, gender, ... }
+          if (d?.displayName || d?.id) {
+            setFriendInfo(prev => ({ ...(prev || {}), ...d }));
+            return;
+          }
+        }
+      } catch {}
+
+      // Fallback: /api/friends list
+      try {
+        const r2 = await fetch(`${API}/api/friends`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (r2.ok) {
+          const data = await r2.json();
+          const friend = (data?.friends || []).find(
+            f => String(f.friendshipId) === String(friendshipId)
+          );
+          if (friend) {
+            setFriendInfo(prev => ({
+              ...(prev || {}),
+              id: friend.id,
+              displayName: friend.displayName || friend.display_name || friend.name,
+              isOnline: friend.status === 'online',
+            }));
+          }
+        }
+      } catch {}
+    };
+
+    loadFriendInfo();
   }, [friendshipId, token, clearUnread]);
 
   // ── Socket listeners ────────────────────────────────────────────────────────

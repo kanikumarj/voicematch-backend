@@ -67,7 +67,7 @@ export default function FriendRequestButton({ partner, sessionId, buttonOnly = f
               ? 'rgba(16,185,129,0.2)'
               : isSent
                 ? 'rgba(16,185,129,0.12)'
-                : 'rgba(255,255,255,0.1)',
+                : 'var(--bg-tertiary)',
             color: isActive ? '#10B981' : 'var(--text-primary)',
             fontSize: '22px', cursor: isActive ? 'default' : 'pointer',
             display: 'flex', alignItems: 'center',

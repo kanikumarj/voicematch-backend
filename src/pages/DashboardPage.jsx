@@ -418,7 +418,7 @@ export default function DashboardPage() {
                 <button
                   key={f.id}
                   className="online-friend"
-                  onClick={() => navigate(`/chat/${f.friendshipId}`)}
+                  onClick={() => navigate(`/chat/${f.friendshipId}`, { state: { friend: { id: f.id, displayName: f.displayName } } })}
                   aria-label={`Chat with ${f.displayName}`}
                 >
                   <Avatar name={f.displayName} size="md" status="online" />

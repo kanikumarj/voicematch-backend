@@ -1,5 +1,8 @@
-/* FIX: CallScreen CSS — responsive, animations, z-index layers */
+/* ═══════════════════════════════════════════════════════════════
+   CallScreen CSS — works on BOTH light & dark themes
+   ═══════════════════════════════════════════════════════════════ */
 
+/* ── Base screen ── */
 .call-screen {
   position: relative;
   display: flex;
@@ -10,14 +13,77 @@
   overflow: hidden;
 }
 
-/* ── Audio element never blocks — always at base layer ── */
-.call-screen audio {
-  position: absolute;
-  z-index: -1;
-  pointer-events: none;
+.call-screen--partner-left,
+.call-screen--connecting,
+.call-screen--centered {
+  justify-content: center;
+  gap: 16px;
+  padding: 24px;
 }
 
-/* ── Waveform visualization bars ── */
+/* ── Status indicators ── */
+.call-status-icon { font-size: 56px; }
+.call-status-title { color: var(--text-primary); font-size: 22px; font-weight: 700; }
+.call-status-subtitle { color: var(--text-secondary); font-size: 14px; }
+
+.call-spinner {
+  width: 36px; height: 36px;
+  border: 3px solid var(--accent-primary);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin-ring 0.8s linear infinite;
+}
+
+/* ── Avatar ── */
+.call-avatar {
+  width: 96px; height: 96px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 800; font-size: 38px;
+  transition: all 0.4s;
+}
+.call-avatar--pulsing {
+  animation: pulse-ring 2s infinite;
+  box-shadow: 0 0 0 16px rgba(124,58,237,0.15);
+}
+.call-avatar--connected {
+  box-shadow:
+    0 0 0 12px rgba(124,58,237,0.15),
+    0 0 0 24px rgba(124,58,237,0.07);
+}
+
+/* ── Partner name ── */
+.call-partner-name {
+  color: var(--text-primary);
+  font-size: 26px; font-weight: 700;
+  margin: 0; letter-spacing: -0.3px;
+  text-align: center;
+}
+
+/* ── Timer ── */
+.call-timer {
+  display: flex; align-items: center; gap: 6px;
+  color: var(--text-muted);
+  font-size: 15px; font-weight: 600;
+}
+.call-timer--live { color: #EF4444; }
+.call-timer-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #EF4444;
+  animation: pulse-dot 1s infinite;
+}
+
+/* ── Pool stat ── */
+.call-pool-stat {
+  color: var(--text-muted); font-size: 12px;
+}
+
+/* ── Waveform ── */
+.call-waveform {
+  display: flex; align-items: center; gap: 4px;
+  height: 48px; margin-top: 16px;
+}
 .viz-bar {
   width: 4px;
   background: var(--accent-primary);
@@ -28,88 +94,206 @@
   animation-iteration-count: infinite;
 }
 
-/* ── Z-index layers ── */
-/* Controls: z-index 10 */
-/* Top bar (back + report): z-index 20 */
-/* Dare overlay: z-index 30 */
-/* Music panel: z-index 40 */
-/* Report modal: z-index 100-101 (handled in InCallReport) */
+/* ── Top bar ── */
+.call-topbar {
+  position: absolute; top: 0; left: 0; right: 0;
+  display: flex; align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  padding-top: max(16px, env(safe-area-inset-top));
+  z-index: 20;
+}
+.call-topbar-btn {
+  width: 40px !important; height: 40px !important;
+  border-radius: 50%;
+  background: var(--bg-tertiary) !important;
+  border: 1px solid var(--border-default) !important;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-primary); font-size: 20px;
+}
+.call-reported-badge {
+  padding: 8px 14px; border-radius: 20px;
+  background: rgba(16,185,129,0.12);
+  border: 1px solid rgba(16,185,129,0.3);
+  color: #10B981; font-size: 13px; font-weight: 600;
+}
 
-/* ── Animations ── */
+/* ── Center section ── */
+.call-center {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding-top: 80px;
+  padding-bottom: 240px;
+  gap: 12px;
+}
+
+/* ── Bottom controls ── */
+.call-controls {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: 20px 24px;
+  padding-bottom: max(28px, env(safe-area-inset-bottom));
+  background: linear-gradient(to top, var(--bg-primary) 80%, transparent);
+  display: flex; flex-direction: column;
+  align-items: center; gap: 20px;
+  z-index: 10;
+}
+
+.call-controls-secondary {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.call-controls-primary {
+  display: flex;
+  gap: 28px;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+/* ── Control button base ── */
+.call-ctrl-group {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 5px;
+}
+
+.call-ctrl-btn {
+  width: 64px !important; height: 64px !important;
+  border-radius: 50% !important;
+  background: var(--bg-tertiary) !important;
+  border: 1px solid var(--border-default) !important;
+  color: var(--text-primary);
+  font-size: 24px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(8px);
+  transition: all 0.2s;
+}
+.call-ctrl-btn:hover {
+  background: var(--bg-elevated) !important;
+  transform: scale(1.05);
+}
+
+/* Danger variant (muted) */
+.call-ctrl-btn--danger {
+  background: rgba(239,68,68,0.15) !important;
+  border: 1px solid rgba(239,68,68,0.3) !important;
+  color: #EF4444;
+}
+
+/* End call — big red */
+.call-ctrl-btn--end {
+  width: 72px !important; height: 72px !important;
+  background: #DC2626 !important;
+  border: none !important;
+  color: #fff;
+  font-size: 26px;
+  box-shadow: 0 4px 24px rgba(220,38,38,0.45);
+}
+.call-ctrl-btn--end:hover {
+  background: #B91C1C !important;
+}
+.call-ctrl-btn--end:active {
+  transform: scale(0.94) !important;
+}
+
+.call-ctrl-label {
+  color: var(--text-secondary);
+  font-size: 11px; font-weight: 500;
+}
+.call-ctrl-label--end {
+  color: #DC2626; font-weight: 600;
+}
+
+/* ── Rating card ── */
+.call-rating-card {
+  background: var(--bg-elevated);
+  padding: 32px; border-radius: 16px;
+  width: 100%; max-width: 400px; text-align: center;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+.call-rating-title {
+  color: var(--text-primary); margin: 0 0 8px;
+}
+.call-rating-subtitle {
+  color: var(--text-muted); margin-bottom: 24px;
+}
+.call-rating-stars {
+  display: flex; justify-content: center; gap: 12px; margin-bottom: 32px;
+}
+.call-star-btn {
+  background: none !important; border: none !important;
+  font-size: 40px; cursor: pointer;
+  transition: all 0.15s;
+}
+.call-rating-actions {
+  display: flex; gap: 12px;
+}
+.call-btn-secondary {
+  flex: 1; padding: 12px;
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border-default) !important;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary); cursor: pointer; font-size: 15px;
+}
+.call-btn-primary {
+  flex: 2; padding: 12px;
+  background: var(--accent-primary) !important;
+  border: none !important;
+  border-radius: var(--radius-md);
+  color: #fff; cursor: pointer; font-size: 15px; font-weight: 600;
+}
+.call-btn-primary:disabled {
+  background: var(--bg-tertiary) !important;
+  color: var(--text-muted);
+}
+
+/* ═══════ ANIMATIONS ═══════ */
 @keyframes spin-ring {
   to { transform: rotate(360deg); }
 }
-
 @keyframes pulse-ring {
-  0% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.4); }
-  70% { box-shadow: 0 0 0 20px rgba(124, 58, 237, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(124,58,237,0.4); }
+  70% { box-shadow: 0 0 0 20px rgba(124,58,237,0); }
+  100% { box-shadow: 0 0 0 0 rgba(124,58,237,0); }
 }
-
 @keyframes pulse-dot {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }
 }
-
 @keyframes wave-bar {
   0%, 100% { height: 4px; }
   50% { height: 28px; }
 }
-
 @keyframes slide-up {
   from { transform: translateX(-50%) translateY(20px); opacity: 0; }
   to   { transform: translateX(-50%) translateY(0); opacity: 1; }
 }
 
-@keyframes fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
+/* ═══════ RESPONSIVE ═══════ */
 
-/* ── Responsive ── */
-
-/* Small phones (320-389px) */
-@media (max-width: 389px) {
-  .call-screen button[style*="width: 64px"] {
-    width: 56px !important;
-    height: 56px !important;
-  }
-  .call-screen button[style*="width: 72px"] {
-    width: 64px !important;
-    height: 64px !important;
-  }
-  .call-screen button[style*="width: 56px"] {
-    width: 48px !important;
-    height: 48px !important;
-  }
-}
-
-/* Tablets / desktop */
+/* Desktop: centered with comfortable width */
 @media (min-width: 768px) {
   .call-screen {
-    max-width: 480px;
+    max-width: 600px;
     margin: 0 auto;
     border-left: 1px solid var(--border-subtle);
     border-right: 1px solid var(--border-subtle);
   }
 }
 
-/* Music panel responsive */
-@media (max-width: 480px) {
-  .music-panel-container {
-    width: calc(100vw - 16px) !important;
-    border-radius: 16px 16px 0 0 !important;
-    bottom: 0 !important;
-  }
+/* Small phones */
+@media (max-width: 389px) {
+  .call-ctrl-btn { width: 52px !important; height: 52px !important; font-size: 20px; }
+  .call-ctrl-btn--end { width: 60px !important; height: 60px !important; }
+  .call-controls-secondary { gap: 20px; }
+  .call-controls-primary { gap: 16px; }
 }
 
-/* Touch device min tap targets */
+/* Touch devices */
 @media (hover: none) and (pointer: coarse) {
-  .call-screen button {
-    min-height: 44px;
-    min-width: 44px;
-  }
-  .call-screen input[type="range"] {
-    height: 24px;
-  }
+  .call-ctrl-btn { min-height: 48px; min-width: 48px; }
 }

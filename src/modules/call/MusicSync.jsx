@@ -171,12 +171,11 @@ export default function MusicSync({
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
         <button onClick={() => setIsOpen(!isOpen)} style={{
-          width: '56px', height: '56px', borderRadius: '50%', border: 'none',
-          background: (isOpen || currentTrack) ? 'rgba(124,58,237,0.2)' : 'rgba(255,255,255,0.1)',
+          width: '56px', height: '56px', borderRadius: '50%',
+          background: (isOpen || currentTrack) ? 'rgba(124,58,237,0.2)' : 'var(--bg-tertiary)',
           color: (isOpen || currentTrack) ? 'var(--accent-primary)' : 'var(--text-primary)',
           fontSize: '22px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          backdropFilter: 'blur(8px)',
-          border: (isOpen || currentTrack) ? '1px solid rgba(124,58,237,0.3)' : '1px solid var(--border-subtle)',
+          border: (isOpen || currentTrack) ? '1px solid rgba(124,58,237,0.3)' : '1px solid var(--border-default)',
           position: 'relative', transition: 'all 0.2s'
         }}>
           🎵

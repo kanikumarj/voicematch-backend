@@ -139,7 +139,7 @@ export default function MessagesPage() {
                 <div
                   key={f.id}
                   className={`msg-item ${f.unreadCount > 0 ? 'msg-unread' : ''}`}
-                  onClick={() => navigate(`/chat/${f.friendshipId}`)}
+                  onClick={() => navigate(`/chat/${f.friendshipId}`, { state: { friend: { id: f.id, displayName: f.displayName } } })}
                 >
                   <Avatar name={f.displayName} size="md" status={status} />
                   <div className="msg-item-info">
