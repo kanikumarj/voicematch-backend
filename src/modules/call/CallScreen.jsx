@@ -1,7 +1,3 @@
-// FIX: CallScreen — WhatsApp-style layout
-// Report: top-right, Primary row: Mute + End + More, Secondary row: Dare + Music + Add
-// Desktop: full-width centered max 600px with proper contrast
-
 import { useEffect, useState } from 'react';
 import { useWebRTC } from './useWebRTC';
 import useCallTimer from '../../hooks/useCallTimer';
@@ -21,6 +17,8 @@ export default function CallScreen({ socket, token, partnerName, isInitiator, pa
   const [showRating, setShowRating] = useState(false);
   const [callEndedReason, setCallEndedReason] = useState(null);
   const [ratingVal, setRatingVal] = useState(0);
+  const [musicOpen, setMusicOpen] = useState(false); // shared across button + panel
+
 
   const {
     callStatus, isMuted, remoteAudioRef,
@@ -246,6 +244,8 @@ export default function CallScreen({ socket, token, partnerName, isInitiator, pa
               callAudioRef={remoteAudioRef}
               mode="call"
               buttonOnly
+              isOpen={musicOpen}
+              onOpenChange={setMusicOpen}
             />
             <FriendRequestButton
               partner={{ id: partnerId, name: partnerDisplay }}
@@ -301,6 +301,8 @@ export default function CallScreen({ socket, token, partnerName, isInitiator, pa
           callAudioRef={remoteAudioRef}
           mode="call"
           panelOnly
+          isOpen={musicOpen}
+          onOpenChange={setMusicOpen}
         />
       )}
     </div>

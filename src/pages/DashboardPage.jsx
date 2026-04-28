@@ -40,6 +40,8 @@ export default function DashboardPage() {
   const [friendsData, setFriendsData]   = useState({ friends: [], pendingReceived: [] });
   const [searchTimer, setSearchTimer]   = useState(0);
   const [noUsersAvailable, setNoUsers]  = useState(false);
+  const [incomingCall, setIncomingCall] = useState(null); // { fromUser, callId }
+  const [callRinging, setCallRinging]   = useState(null); // { callId, toUserId }
   
   // Use new online stats hook (replaces useActiveUsers)
   const onlineStats = useOnlineStats();
@@ -95,10 +97,46 @@ export default function DashboardPage() {
       setIsInitiator(initiator);
       setAppState('connecting');
     }
+    // Handle incoming direct call from a friend
+    function onIncomingDirectCall({ fromUser, callId }) {
+      setIncomingCall({ fromUser, callId });
+    }
+    // Caller: call is ringing on friend's end
+    function onDirectCallRinging({ callId, toUserId }) {
+      setCallRinging({ callId, toUserId });
+      toast.info('Ringing…');
+    }
+    // Call was accepted — go to call screen
+    function onDirectCall({ callId, initiator, sessionId, partnerName, partnerId }) {
+      setIncomingCall(null);
+      setCallRinging(null);
+      setIsInitiator(initiator);
+      setPartner({ id: partnerId, name: partnerName, sessionId });
+      setMatchMode('voice');
+      setAppState('connecting');
+    }
+    function onDirectCallRejected() {
+      setCallRinging(null);
+      toast.error('Call rejected');
+    }
+    function onDirectCallMissed() {
+      setCallRinging(null);
+      toast.warning('Call not answered');
+    }
+    function onDirectCallCancelled() {
+      setIncomingCall(null);
+    }
+    function onFriendBusy() {
+      setCallRinging(null);
+      toast.error('Friend is currently in a call');
+    }
+    function onFriendOfflineForCall() {
+      setCallRinging(null);
+      toast.error('Friend is offline');
+    }
     function onPartnerDisconnect({ reason } = {}) {
       setPartner(null);
       if (reason === 'skip' || reason === 'exit') {
-        // Partner skipped us — go back to searching automatically
         setAppState('searching');
         toast.info('Your partner moved on. Finding a new match…');
       } else if (reason === 'ready_timeout') {
@@ -113,70 +151,49 @@ export default function DashboardPage() {
       setPartner(null);
       setAppState('searching');
     }
-    // FIX: [Area 6] Handle direct call with full partner info
-    function onDirectCall({ initiator, sessionId, partnerName, partnerId }) {
-      setIsInitiator(initiator);
-      if (partnerId || partnerName) {
-        setPartner(prev => ({
-          ...prev,
-          id: partnerId || prev?.id,
-          name: partnerName || prev?.name,
-          sessionId: sessionId || prev?.sessionId,
-        }));
-      }
-      setMatchMode('voice');
-      setAppState('connecting');
-    }
     function onQueuePosition({ waiting }) {
-      if (waiting && appState === 'searching') {
-        setNoUsers(false); // still queued
-      }
+      if (waiting && appState === 'searching') setNoUsers(false);
     }
     function onConnect()    { setReconnecting(false); }
     function onDisconnect() { setReconnecting(true);  }
 
-    socket.on('session_restored',     onRestored);
-    socket.on('match_found',          onMatchFound);
-    socket.on('both_ready',           onBothReady);
-    socket.on('partner_disconnected', onPartnerDisconnect);
-    socket.on('skip_confirmed',       onSkipConfirmed);
-    socket.on('direct_call_accepted', onDirectCall);
-    socket.on('queue_position',       onQueuePosition);
-    socket.on('connect',              onConnect);
-    socket.on('disconnect',           onDisconnect);
+    socket.on('session_restored',        onRestored);
+    socket.on('match_found',             onMatchFound);
+    socket.on('both_ready',              onBothReady);
+    socket.on('partner_disconnected',    onPartnerDisconnect);
+    socket.on('skip_confirmed',          onSkipConfirmed);
+    socket.on('incoming_direct_call',    onIncomingDirectCall);
+    socket.on('direct_call_ringing',     onDirectCallRinging);
+    socket.on('direct_call_accepted',    onDirectCall);
+    socket.on('direct_call_rejected',    onDirectCallRejected);
+    socket.on('direct_call_missed',      onDirectCallMissed);
+    socket.on('direct_call_cancelled',   onDirectCallCancelled);
+    socket.on('friend_busy',             onFriendBusy);
+    socket.on('friend_offline',          onFriendOfflineForCall);
+    socket.on('queue_position',          onQueuePosition);
+    socket.on('connect',                 onConnect);
+    socket.on('disconnect',              onDisconnect);
 
     return () => {
-      socket.off('session_restored',     onRestored);
-      socket.off('match_found',          onMatchFound);
-      socket.off('both_ready',           onBothReady);
-      socket.off('partner_disconnected', onPartnerDisconnect);
-      socket.off('skip_confirmed',       onSkipConfirmed);
-      socket.off('direct_call_accepted', onDirectCall);
-      socket.off('queue_position',       onQueuePosition);
-      socket.off('connect',              onConnect);
-      socket.off('disconnect',           onDisconnect);
+      socket.off('session_restored',        onRestored);
+      socket.off('match_found',             onMatchFound);
+      socket.off('both_ready',              onBothReady);
+      socket.off('partner_disconnected',    onPartnerDisconnect);
+      socket.off('skip_confirmed',          onSkipConfirmed);
+      socket.off('incoming_direct_call',    onIncomingDirectCall);
+      socket.off('direct_call_ringing',     onDirectCallRinging);
+      socket.off('direct_call_accepted',    onDirectCall);
+      socket.off('direct_call_rejected',    onDirectCallRejected);
+      socket.off('direct_call_missed',      onDirectCallMissed);
+      socket.off('direct_call_cancelled',   onDirectCallCancelled);
+      socket.off('friend_busy',             onFriendBusy);
+      socket.off('friend_offline',          onFriendOfflineForCall);
+      socket.off('queue_position',          onQueuePosition);
+      socket.off('connect',                 onConnect);
+      socket.off('disconnect',              onDisconnect);
     };
   }, [toast]); // stable deps only
 
-  // FIX: [Area 6] Listen for direct call window event (when already on dashboard)
-  useEffect(() => {
-    const handleDirectCallEvent = (e) => {
-      const { initiator, sessionId, partnerName, partnerId } = e.detail || {};
-      setIsInitiator(!!initiator);
-      if (partnerId || partnerName) {
-        setPartner(prev => ({
-          ...prev,
-          id: partnerId || prev?.id,
-          name: partnerName || prev?.name,
-          sessionId: sessionId || prev?.sessionId,
-        }));
-      }
-      setMatchMode('voice');
-      setAppState('connecting');
-    };
-    window.addEventListener('direct_call_connected', handleDirectCallEvent);
-    return () => window.removeEventListener('direct_call_connected', handleDirectCallEvent);
-  }, []);
 
   // Search timer
   useEffect(() => {
@@ -236,6 +253,19 @@ export default function DashboardPage() {
     setAppState('searching');
   }
 
+  function respondToDirectCall(callId, action) {
+    const socket = getSocket_safe(); if (!socket) return;
+    socket.emit('direct_call_response', { callId, action });
+    if (action === 'reject') setIncomingCall(null);
+  }
+
+  function cancelDirectCall() {
+    if (!callRinging) return;
+    // No cancel event needed — timeout handles it on server
+    setCallRinging(null);
+    toast.info('Call cancelled');
+  }
+
   // ── Call / Chat screen ───────────────────────────────────────────────────────
   if (appState === 'connected' || appState === 'connecting') {
     if (matchMode === 'chat') {
@@ -275,6 +305,79 @@ export default function DashboardPage() {
   return (
     <AppShell>
       <TopBar title="🎙️ VoiceMatch" />
+
+      {/* ── Incoming Direct Call Popup ── */}
+      {incomingCall && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 500,
+          background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '24px',
+        }}>
+          <div style={{
+            background: 'var(--bg-elevated)', borderRadius: '20px',
+            padding: '32px 24px', maxWidth: '340px', width: '100%',
+            textAlign: 'center', boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+            animation: 'pulse-ring 1s ease infinite',
+          }}>
+            <div style={{
+              width: '80px', height: '80px', borderRadius: '50%',
+              background: 'var(--accent-primary)', margin: '0 auto 16px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '32px', color: '#fff', fontWeight: 800,
+            }}>
+              {(incomingCall.fromUser?.displayName || '?')[0].toUpperCase()}
+            </div>
+            <h3 style={{ color: 'var(--text-primary)', margin: '0 0 6px', fontSize: '20px', fontWeight: 700 }}>
+              {incomingCall.fromUser?.displayName || 'Friend'}
+            </h3>
+            <p style={{ color: 'var(--text-muted)', margin: '0 0 28px', fontSize: '14px' }}>
+              📞 Incoming voice call…
+            </p>
+            <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
+              <button
+                onClick={() => respondToDirectCall(incomingCall.callId, 'reject')}
+                style={{
+                  width: '64px', height: '64px', borderRadius: '50%',
+                  background: '#DC2626', border: 'none', color: '#fff',
+                  fontSize: '24px', cursor: 'pointer',
+                  boxShadow: '0 4px 20px rgba(220,38,38,0.4)',
+                }}
+              >📵</button>
+              <button
+                onClick={() => respondToDirectCall(incomingCall.callId, 'accept')}
+                style={{
+                  width: '64px', height: '64px', borderRadius: '50%',
+                  background: '#10B981', border: 'none', color: '#fff',
+                  fontSize: '24px', cursor: 'pointer',
+                  boxShadow: '0 4px 20px rgba(16,185,129,0.4)',
+                  animation: 'pulse-ring 1s ease infinite',
+                }}
+              >📞</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Outgoing ringing indicator ── */}
+      {callRinging && (
+        <div style={{
+          position: 'fixed', bottom: '100px', left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'var(--bg-elevated)', borderRadius: '16px',
+          padding: '14px 24px', zIndex: 400,
+          display: 'flex', alignItems: 'center', gap: '12px',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+          border: '1px solid var(--border-default)',
+        }}>
+          <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10B981', animation: 'pulse-dot 1s infinite' }} />
+          <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>Ringing…</span>
+          <button onClick={cancelDirectCall} style={{
+            color: '#EF4444', background: 'none', border: 'none',
+            cursor: 'pointer', fontSize: '13px', fontWeight: 600,
+          }}>Cancel</button>
+        </div>
+      )}
 
       {reconnecting && (
         <div className="reconnecting-bar" role="status">↻ Reconnecting…</div>

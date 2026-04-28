@@ -292,8 +292,13 @@ export default function ChatPage() {
   }
 
   function callFriend() {
-    try { getSocket().emit('direct_call_request', { toUserId: friendInfo?.id }); toast.info('Calling…'); }
-    catch { toast.error('Connection error'); }
+    if (!friendInfo?.id) return toast.error('Friend info not loaded yet');
+    try {
+      getSocket().emit('direct_call_request', { toUserId: friendInfo.id });
+      toast.info('Calling ' + friendName + '…');
+    } catch {
+      toast.error('Connection error');
+    }
   }
 
   const grouped = [];
@@ -374,14 +379,18 @@ export default function ChatPage() {
         </button>
       </header>
 
-      {/* FIX: [Area 7] Music panel below header */}
+      {/* Music panel — only shown when musicOpen, inline above messages */}
       {musicOpen && chatSocket && (
-        <MusicSync
-          socket={chatSocket}
-          isCallConnected={true}
-          mode="chat"
-          friendshipId={friendshipId}
-        />
+        <div style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+          <MusicSync
+            socket={chatSocket}
+            isCallConnected={true}
+            mode="chat"
+            friendshipId={friendshipId}
+            isOpen={musicOpen}
+            onOpenChange={setMusicOpen}
+          />
+        </div>
       )}
 
       {/* Messages Area */}
