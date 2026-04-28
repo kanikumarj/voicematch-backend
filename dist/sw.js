@@ -82,7 +82,7 @@ define(['./workbox-d64589cf'], (function (workbox) { 'use strict';
     "revision": "1872c500de691dce40960bb85481de07"
   }, {
     "url": "index.html",
-    "revision": "27b7fac82b87b82ae9913bfdfc0efa26"
+    "revision": "8b15968fd9c6e0febc724766f8ea3ce1"
   }, {
     "url": "favicon.svg",
     "revision": "88627b5832fe964df28f5ab611379a86"
@@ -105,10 +105,10 @@ define(['./workbox-d64589cf'], (function (workbox) { 'use strict';
     "url": "assets/rolldown-runtime-S-ySWqyJ.js",
     "revision": null
   }, {
-    "url": "assets/index-DXcj7zAZ.js",
+    "url": "assets/index-D9RbWbK5.css",
     "revision": null
   }, {
-    "url": "assets/index-DbgGrKY1.css",
+    "url": "assets/index-CwXVgKfP.js",
     "revision": null
   }, {
     "url": "favicon.svg",

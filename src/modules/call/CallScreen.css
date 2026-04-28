@@ -8,9 +8,11 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 100%;          /* CRITICAL — must fill parent width */
   min-height: 100dvh;
   background: var(--bg-primary);
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .call-screen--partner-left,
@@ -275,13 +277,54 @@
 
 /* ═══════ RESPONSIVE ═══════ */
 
-/* Desktop: centered with comfortable width */
+/* Desktop: full-width background, content centered in a comfortable column */
 @media (min-width: 768px) {
   .call-screen {
-    max-width: 600px;
-    margin: 0 auto;
-    border-left: 1px solid var(--border-subtle);
-    border-right: 1px solid var(--border-subtle);
+    width: 100%;
+    /* NO max-width — it breaks absolute positioning */
+  }
+
+  /* Center the avatar+name+timer content */
+  .call-center {
+    max-width: 480px;
+    width: 100%;
+  }
+
+  /* Keep controls full-width so they span edge-to-edge */
+  .call-controls {
+    left: 0; right: 0;
+    max-width: 100%;
+  }
+
+  /* Scale up avatar on desktop */
+  .call-avatar {
+    width: 120px;
+    height: 120px;
+    font-size: 48px;
+  }
+
+  .call-partner-name {
+    font-size: 32px;
+  }
+
+  /* Larger buttons on desktop */
+  .call-ctrl-btn {
+    width: 72px !important;
+    height: 72px !important;
+    font-size: 26px;
+  }
+  .call-ctrl-btn--end {
+    width: 80px !important;
+    height: 80px !important;
+  }
+
+  /* Wider control rows */
+  .call-controls-primary { gap: 36px; }
+  .call-controls-secondary { gap: 40px; }
+
+  /* Topbar max-width */
+  .call-topbar {
+    max-width: 100%;
   }
 }
 
