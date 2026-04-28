@@ -261,83 +261,83 @@ const DARES = [
   // ============================================
   {
     id: 31,
-    text: "Naruto oda 'I will become Hokage' speech — Tamil la translate pannunga!",
+    text: "Do Naruto's 'Believe it!' catchphrase and explain your ninja way in 30 seconds!",
     category: "anime",
-    icon: "🎌",
-    duration: 40,
-    hint: "Believe it da!"
+    icon: "🍃",
+    duration: 35,
+    hint: "What is your nindo?"
   },
   {
     id: 32,
-    text: "One Piece la Luffy oda crew motivate speech — neenga Luffy!",
+    text: "Explain the Nen system from Hunter x Hunter as if teaching someone for the first time!",
     category: "anime",
-    icon: "🎌",
-    duration: 40,
-    hint: "Pirate King aaguvom!"
+    icon: "⚡",
+    duration: 45,
+    hint: "Gon and Killua style!"
   },
   {
     id: 33,
-    text: "Attack on Titan la Eren's passion speech — Tamil dubbing style pannunga!",
+    text: "Do your best Levi Ackerman impression — stoic, serious, cleaning reference allowed!",
     category: "anime",
-    icon: "🎌",
-    duration: 45,
-    hint: "Fight for freedom!"
+    icon: "⚔️",
+    duration: 30,
+    hint: "Humanity's strongest soldier!"
   },
   {
     id: 34,
-    text: "Dragon Ball Z la Goku oda power up — 'aaaargh' sounds without stopping 15 seconds!",
+    text: "Goku powering up to Super Saiyan — do the sound and describe the transformation!",
     category: "anime",
-    icon: "🎌",
-    duration: 20,
-    hint: "Super Saiyan time!"
+    icon: "💫",
+    duration: 25,
+    hint: "It's over 9000!"
   },
   {
     id: 35,
-    text: "Death Note la Light Yagami la neenga — villain monologue pannunga!",
+    text: "You're Light Yagami — convince someone you're justice without revealing the Death Note!",
     category: "anime",
-    icon: "🎌",
+    icon: "📓",
     duration: 45,
     hint: "I am justice!"
   },
   {
     id: 36,
-    text: "Demon Slayer la Tanjiro's kindness — even to enemy express pannunga!",
+    text: "Explain Tanjiro's Water Breathing form as if you're actually performing it!",
     category: "anime",
-    icon: "🎌",
+    icon: "🌊",
     duration: 35,
-    hint: "Water breathing vibes!"
+    hint: "Constant Flux!"
   },
   {
     id: 37,
-    text: "Jujutsu Kaisen la Gojo sensei oda 'Throughout Heaven and Earth' speech Tamil la!",
+    text: "Be Gojo Sensei explaining Infinity to a student — include 'Throughout Heaven and Earth'!",
     category: "anime",
-    icon: "🎌",
+    icon: "♾️",
     duration: 40,
-    hint: "Strongest sorcerer!"
+    hint: "The honored one!"
   },
   {
     id: 38,
-    text: "Favourite anime character explain pannunga — neenga them aagama, describe pannunga!",
+    text: "Describe your favorite anime in 30 seconds as a movie trailer!",
     category: "anime",
-    icon: "🎌",
-    duration: 45,
-    hint: "Weebu time!"
+    icon: "🎬",
+    duration: 35,
+    hint: "Make it epic!"
   },
   {
     id: 39,
-    text: "Hunter x Hunter la Killua and Gon friendship — Tamil la describe pannunga!",
+    text: "One Piece — you just found the One Piece. What do you say to your crew?",
     category: "anime",
-    icon: "🎌",
+    icon: "🏴‍☠️",
     duration: 40,
-    hint: "Best friendship!"
+    hint: "Pirate King speech!"
   },
   {
     id: 40,
-    text: "Sword Art Online la Kirito oda solo mode — neenga aana enna panuveenga sollunga!",
+    text: "You're Lelouch — give a Geass command to your call partner right now!",
     category: "anime",
-    icon: "🎌",
-    duration: 35,
-    hint: "Black swordsman!"
+    icon: "👁️",
+    duration: 30,
+    hint: "I, Lelouch vi Britannia, command you..."
   },
 
   // ============================================

@@ -64,13 +64,22 @@ function registerChatEvents(socket, io) {
       });
 
       if (friendSocketId) {
-        // FIX: [Area 4] Emit new_message for notifications and real-time chat
+        // FIX: Always fetch sender name from DB for accuracy
+        let senderName = socket.data.user.displayName || socket.data.user.display_name || 'Someone';
+        try {
+          const nameResult = await db.query('SELECT display_name FROM users WHERE id = $1', [userId]);
+          if (nameResult.rows[0]?.display_name) senderName = nameResult.rows[0].display_name;
+        } catch {}
+
+        // FIX: Emit new_message with senderName for notifications and real-time chat
         io.to(friendSocketId).emit('new_message', {
           id: message.id,
           senderId: userId,
-          senderName: socket.data.user.displayName,
+          senderName,
           text: content,
+          content,
           createdAt: message.sent_at,
+          sentAt: message.sent_at,
           friendshipId,
           fromMe: false,
           status: 'delivered'

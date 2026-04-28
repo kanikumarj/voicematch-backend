@@ -1,31 +1,22 @@
-// FIX: [Area 1] CallScreen — complete redesign with 2-row controls layout
+// FIX: CallScreen — WhatsApp-style layout
+// Report: top-right, Primary row: Mute + End + More, Secondary row: Dare + Music + Add
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useWebRTC } from './useWebRTC';
-import Avatar from '../../components/ui/Avatar';
-import Button from '../../components/ui/Button';
-import BottomSheet from '../../components/ui/BottomSheet';
 import useCallTimer from '../../hooks/useCallTimer';
 import useOnlineStats from '../../hooks/useOnlineStats';
-import api from '../../lib/api';
-// NEW: [Feature 1] In-call report
+import { useAuth } from '../../context/AuthContext';
 import InCallReport from './InCallReport';
-// NEW: [Feature 2] Music sync
-import MusicSync from './MusicSync';
-// NEW: [Feature 3] Dare mode
 import DareMode from './DareMode';
+import MusicSync from './MusicSync';
+import FriendRequestButton from '../friends/FriendRequestButton';
+import api from '../../lib/api';
 import './CallScreen.css';
 
 export default function CallScreen({ socket, token, partnerName, isInitiator, partnerId, sessionId, onCallEnd }) {
-  const [friendState, setFriendState] = useState('idle');
-  const [incomingReq, setIncomingReq] = useState(null);
-  // NEW: [Feature 1] In-call report state
-  const [hasReported, setHasReported] = useState(false);
-  // FIX: [Area 1] Mobile toggle for feature row
-  const [showFeatures, setShowFeatures] = useState(false);
-  // FIX: [Area 2] Partner left state
+  const { user } = useAuth();
   const [localCallStatus, setLocalCallStatus] = useState(null);
-  
+  const [hasReported, setHasReported] = useState(false);
   const [showRating, setShowRating] = useState(false);
   const [callEndedReason, setCallEndedReason] = useState(null);
   const [ratingVal, setRatingVal] = useState(0);
@@ -39,6 +30,8 @@ export default function CallScreen({ socket, token, partnerName, isInitiator, pa
   const { seconds, formatted } = useCallTimer(callStatus === 'connected');
   const onlineStats = useOnlineStats();
 
+  const partnerDisplay = partnerName || 'Anonymous';
+
   const interceptEnd = (reason) => {
     endCall();
     if (seconds > 10 && partnerId) {
@@ -49,23 +42,17 @@ export default function CallScreen({ socket, token, partnerName, isInitiator, pa
     }
   };
 
-  // FIX: [Area 2] Handle ALL partner_disconnected scenarios
+  // Handle partner disconnect
   useEffect(() => {
     if (!socket) return;
 
     const handlePartnerDisconnected = ({ reason }) => {
-      console.log('[CALL] Partner disconnected:', reason);
       closePeer('partner_disconnected');
       setLocalCallStatus('partner_left');
-      
-      // Auto-navigate after 3 seconds
-      setTimeout(() => {
-        onCallEnd(reason || 'partner_left');
-      }, 3000);
+      setTimeout(() => onCallEnd(reason || 'partner_left'), 3000);
     };
 
     const handleForceEnd = ({ reason }) => {
-      console.log('[CALL] Force end:', reason);
       closePeer('force_end');
       onCallEnd(reason || 'force_ended');
     };
@@ -79,280 +66,367 @@ export default function CallScreen({ socket, token, partnerName, isInitiator, pa
     };
   }, [socket, closePeer, onCallEnd]);
 
+  // WebRTC signaling events
   useEffect(() => {
     if (!socket) return;
 
-    const onOffer = async ({ offer }) => await answerCall(offer);
-    const onAnswer = async ({ answer }) => await handleRemoteAnswer(answer);
-    const onIce = async ({ candidate }) => await handleRemoteIce(candidate);
-    const onCallEnded = () => { interceptEnd('user_ended'); };
-
-    const onReqReceived   = ({ requestId, fromUser }) => setIncomingReq({ requestId, fromUser });
-    const onReqSent       = () => setFriendState('sent');
-    const onFriendCreated = () => { setFriendState('friends'); setIncomingReq(null); };
-    const onReqRejected   = () => setFriendState('idle');
+    const onOffer  = async ({ offer })     => await answerCall(offer);
+    const onAnswer = async ({ answer })    => await handleRemoteAnswer(answer);
+    const onIce    = async ({ candidate }) => await handleRemoteIce(candidate);
+    const onEnded  = ()                    => interceptEnd('partner_ended');
 
     socket.on('webrtc_offer', onOffer);
     socket.on('webrtc_answer', onAnswer);
     socket.on('webrtc_ice_candidate', onIce);
-    socket.on('call_ended', onCallEnded);
-
-    socket.on('friend_request_received',     onReqReceived);
-    socket.on('friend_request_sent_confirm', onReqSent);
-    socket.on('friendship_created',          onFriendCreated);
-    socket.on('friend_request_rejected',     onReqRejected);
-    socket.on('already_friends',             onFriendCreated);
+    socket.on('call_ended', onEnded);
 
     return () => {
       socket.off('webrtc_offer', onOffer);
       socket.off('webrtc_answer', onAnswer);
       socket.off('webrtc_ice_candidate', onIce);
-      socket.off('call_ended', onCallEnded);
-      socket.off('friend_request_received',     onReqReceived);
-      socket.off('friend_request_sent_confirm', onReqSent);
-      socket.off('friendship_created',          onFriendCreated);
-      socket.off('friend_request_rejected',     onReqRejected);
-      socket.off('already_friends',             onFriendCreated);
+      socket.off('call_ended', onEnded);
     };
-  }, [socket, answerCall, handleRemoteAnswer, handleRemoteIce, onCallEnd]);
+  }, [socket, answerCall, handleRemoteAnswer, handleRemoteIce]);
 
+  // Start call if initiator
   useEffect(() => { if (isInitiator) startCall(); }, []);
 
-  // ── Check if already friends
-  useEffect(() => {
-    if (!partnerId) return;
-    fetch(`${import.meta.env.VITE_API_URL}/api/friends/check/${partnerId}`, {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    })
-      .then(r => r.json())
-      .then(data => {
-        if (data.isFriend) setFriendState('friends');
-      })
-      .catch(() => {});
-  }, [partnerId]);
-
-  function handleEnd() { interceptEnd('user_ended'); }
+  const handleEnd = () => interceptEnd('user_ended');
 
   async function submitRating() {
     if (ratingVal > 0) {
       try {
         await api.post('/api/call/rating', {
-          callId: sessionId,
-          ratedUserId: partnerId,
-          rating: ratingVal
+          callId: sessionId, ratedUserId: partnerId, rating: ratingVal
         });
-      } catch (err) {
-        console.error(err);
-      }
+      } catch {}
     }
     onCallEnd(callEndedReason);
   }
 
-  function sendFriendReq() {
-    if (friendState !== 'idle') return;
-    socket.emit('send_friend_request', { toUserId: partnerId, sessionId });
-  }
-
-  function respondReq(action) {
-    if (!incomingReq) return;
-    socket.emit('respond_friend_request', { requestId: incomingReq.requestId, action });
-    if (action === 'reject') setIncomingReq(null);
-  }
-
-  // FIX: [Area 2] Partner left UI state
+  // ── Partner left ──
   if (localCallStatus === 'partner_left') {
     return (
       <div className="call-screen" style={{ justifyContent: 'center', gap: '16px' }}>
-        <audio ref={remoteAudioRef} autoPlay playsInline aria-hidden="true" />
-        <div style={{ fontSize: '48px', marginBottom: '8px' }}>👋</div>
-        <h2 style={{ color: 'var(--text-primary)', fontSize: '20px', fontWeight: 700 }}>
+        <audio ref={remoteAudioRef} autoPlay playsInline style={{ display: 'none' }} />
+        <div style={{ fontSize: '56px' }}>👋</div>
+        <h2 style={{ color: 'var(--text-primary)', fontSize: '22px', fontWeight: 700 }}>
           Partner disconnected
         </h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
           Finding your next match...
         </p>
-        <div className="call-spinner-ring" style={{ 
-          width: '32px', height: '32px', 
-          border: '3px solid transparent', 
-          borderTopColor: 'var(--accent-primary)',
+        <div style={{
+          width: '36px', height: '36px',
+          border: '3px solid var(--accent-primary)',
+          borderTopColor: 'transparent',
           borderRadius: '50%',
-          animation: 'spin-ring 1s linear infinite',
-          margin: '8px auto'
+          animation: 'spin-ring 0.8s linear infinite'
         }} />
       </div>
     );
   }
 
-  return (
-    <div className="call-screen" data-status={callStatus}>
-      {/* FIX: [Area 1] Hidden audio — always rendered, never covered by overlays */}
-      <audio ref={remoteAudioRef} autoPlay playsInline aria-hidden="true" />
-
-      {/* ── Connecting ── */}
-      {callStatus === 'connecting' && (
-        <div className="call-state-connecting">
-          <div className="call-avatar-ring">
-            <Avatar name={partnerName} size="xl" />
-            <div className="call-spinner-ring" />
-          </div>
-          <h2>{partnerName || 'Connecting...'}</h2>
-          <p className="call-status-text">Connecting<span className="dots"><span>.</span><span>.</span><span>.</span></span></p>
+  // ── Connecting ──
+  if (callStatus === 'connecting') {
+    return (
+      <div className="call-screen" style={{ justifyContent: 'center', gap: '20px' }}>
+        <audio ref={remoteAudioRef} autoPlay playsInline style={{ display: 'none' }} />
+        <div style={{
+          width: '96px', height: '96px', borderRadius: '50%',
+          background: 'var(--accent-primary)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: '#fff', fontWeight: 800, fontSize: '36px',
+          animation: 'pulse-ring 2s infinite',
+          boxShadow: '0 0 0 16px rgba(124,58,237,0.15)'
+        }}>
+          {partnerDisplay[0].toUpperCase()}
         </div>
-      )}
+        <div style={{ textAlign: 'center' }}>
+          <h2 style={{ color: 'var(--text-primary)', fontSize: '24px', fontWeight: 700, margin: 0 }}>
+            {partnerDisplay}
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '6px' }}>
+            ⏳ Connecting call...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
-      {/* ── Connected ── */}
-      {callStatus === 'connected' && (
-        <div className="call-state-connected">
-          {/* FIX: [Area 1] Partner info — top section */}
-          <div className="call-partner-section">
-            <Avatar name={partnerName} size="lg" status="in_call" />
-            <div className="call-header-info">
-              <h2 className="call-partner-name">{partnerName}</h2>
-              <span className="call-duration-badge">🔴 {formatted}</span>
-              {onlineStats.voice > 0 && (
-                <span className="call-pool-stat">🟢 {onlineStats.voice} in voice pool</span>
-              )}
-            </div>
-          </div>
-
-          {/* FIX: [Area 1] Waveform bars — CSS animation */}
-          <div className="call-visualizer">
-            {Array.from({ length: 12 }, (_, i) => (
-              <div
-                key={i}
-                className="viz-bar"
-                style={{ animationDelay: `${i * 0.08}s`, animationDuration: `${0.6 + (i % 3) * 0.2}s` }}
-              />
+  // ── Rating overlay ──
+  if (callStatus === 'ended' && showRating) {
+    return (
+      <div className="call-screen" style={{ justifyContent: 'center', padding: '24px' }}>
+        <audio ref={remoteAudioRef} autoPlay playsInline style={{ display: 'none' }} />
+        <div style={{
+          background: 'var(--bg-elevated)', padding: '32px', borderRadius: '16px',
+          width: '100%', maxWidth: '400px', textAlign: 'center',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.2)'
+        }}>
+          <h2 style={{ color: 'var(--text-primary)', margin: '0 0 8px' }}>Rate your call</h2>
+          <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>
+            How was your conversation with {partnerDisplay}?
+          </p>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '32px' }}>
+            {[1, 2, 3, 4, 5].map(s => (
+              <button key={s} onClick={() => setRatingVal(s)} style={{
+                background: 'none', border: 'none', fontSize: '40px', cursor: 'pointer',
+                transform: ratingVal === s ? 'scale(1.2)' : 'scale(1)',
+                filter: s <= ratingVal ? 'none' : 'grayscale(100%) opacity(0.3)',
+                transition: 'all 0.15s'
+              }}>⭐</button>
             ))}
           </div>
-
-          {/* FIX: [Area 1] Feature controls — Row 2 (collapsible on mobile) */}
-          <div className={`call-feature-row ${showFeatures ? 'show' : ''}`}>
-            {/* NEW: [Feature 3] Dare mode */}
-            <DareMode
-              socket={socket}
-              partner={{ id: partnerId, name: partnerName, displayName: partnerName }}
-              sessionId={sessionId}
-              userName={partnerName}
-              isCallConnected={callStatus === 'connected'}
-            />
-
-            {/* NEW: [Feature 2] Music sync */}
-            <MusicSync
-              socket={socket}
-              isCallConnected={callStatus === 'connected'}
-              mode="call"
-              callAudioRef={remoteAudioRef}
-            />
-
-            {/* Friend request button */}
-            <button
-              className={`call-ctrl ctrl-friend ${friendState !== 'idle' ? 'ctrl-sent' : ''}`}
-              onClick={sendFriendReq}
-              disabled={friendState !== 'idle'}
-              aria-label="Add friend"
-            >
-              {friendState === 'friends'
-                ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                : <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
-              }
-              <span>{friendState === 'idle' ? 'Add' : friendState === 'sent' ? 'Sent ✓' : 'Friends'}</span>
-            </button>
-          </div>
-
-          {/* FIX: [Area 1] Main controls — Row 1 — always visible */}
-          <div className="call-main-controls">
-            {/* Mobile toggle for feature row */}
-            <button
-              className="call-ctrl call-ctrl-more"
-              onClick={() => setShowFeatures(!showFeatures)}
-              aria-label="More features"
-            >
-              <span style={{ fontSize: '20px' }}>{showFeatures ? '✕' : '⋯'}</span>
-              <span>{showFeatures ? 'Less' : 'More'}</span>
-            </button>
-
-            <button
-              className={`call-ctrl ${isMuted ? 'ctrl-active' : ''}`}
-              onClick={toggleMute}
-              aria-label={isMuted ? 'Unmute' : 'Mute'}
-              aria-pressed={isMuted}
-            >
-              {isMuted
-                ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-                : <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-              }
-              <span>{isMuted ? 'Unmute' : 'Mute'}</span>
-            </button>
-
-            <button className="call-ctrl ctrl-end" onClick={handleEnd} aria-label="End call">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.41 2 2 0 0 1 3.6 1.24h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81a16 16 0 0 0 5.95 5.95l.87-.87a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
-                <line x1="1" y1="1" x2="23" y2="23"/>
-              </svg>
-              <span>End</span>
-            </button>
-
-            {/* NEW: [Feature 1] In-call report */}
-            {!hasReported && (
-              <InCallReport
-                partner={{ id: partnerId, name: partnerName }}
-                sessionId={sessionId}
-                onReported={() => setHasReported(true)}
-              />
-            )}
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button onClick={() => onCallEnd(callEndedReason)} style={{
+              flex: 1, padding: '12px', background: 'var(--bg-secondary)',
+              border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)',
+              color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '15px'
+            }}>Skip</button>
+            <button onClick={submitRating} disabled={!ratingVal} style={{
+              flex: 2, padding: '12px', background: ratingVal ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
+              border: 'none', borderRadius: 'var(--radius-md)',
+              color: ratingVal ? '#fff' : 'var(--text-muted)', cursor: ratingVal ? 'pointer' : 'default',
+              fontSize: '15px', fontWeight: 600
+            }}>Submit</button>
           </div>
         </div>
-      )}
+      </div>
+    );
+  }
 
-      {/* ── Ended ── */}
-      {(callStatus === 'ended' && !localCallStatus) && (
-        <div className="call-state-ended" style={{ background: 'var(--bg-primary)', position: 'absolute', inset: 0, zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          {showRating ? (
-            <div style={{ background: 'var(--bg-elevated)', padding: 32, borderRadius: 16, width: '100%', maxWidth: 400, textAlign: 'center', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
-              <h2 style={{ color: 'var(--text-primary)' }}>Rate your call</h2>
-              <p style={{ margin: '8px 0 24px', color: 'var(--text-muted)' }}>How was your conversation with {partnerName}?</p>
-              
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginBottom: 32 }}>
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    onClick={() => setRatingVal(star)}
-                    style={{ background: 'none', border: 'none', fontSize: 40, cursor: 'pointer', transition: 'transform 0.2s', transform: ratingVal === star ? 'scale(1.2)' : 'scale(1)', filter: star <= ratingVal ? 'none' : 'grayscale(100%) opacity(0.3)' }}
-                  >
-                    ⭐
-                  </button>
-                ))}
-              </div>
-              
-              <div style={{ display: 'flex', gap: 12 }}>
-                <Button variant="ghost" style={{ flex: 1 }} onClick={() => onCallEnd(callEndedReason)}>Skip</Button>
-                <Button style={{ flex: 2 }} disabled={!ratingVal} onClick={submitRating}>Submit</Button>
-              </div>
-            </div>
-          ) : (
-            <>
-              <span className="call-ended-icon">📵</span>
-              <h2>Call ended</h2>
-              <p>Finding your next match…</p>
-            </>
+  // ── Ended (no rating) ──
+  if (callStatus === 'ended') {
+    return (
+      <div className="call-screen" style={{ justifyContent: 'center', gap: '16px' }}>
+        <audio ref={remoteAudioRef} autoPlay playsInline style={{ display: 'none' }} />
+        <span style={{ fontSize: '64px' }}>📵</span>
+        <h2 style={{ color: 'var(--text-primary)' }}>Call ended</h2>
+        <p style={{ color: 'var(--text-secondary)' }}>Finding your next match…</p>
+      </div>
+    );
+  }
+
+  const isConnected = callStatus === 'connected';
+
+  // ── Connected layout ──
+  return (
+    <div className="call-screen" data-status={callStatus}>
+      {/* Hidden audio — ALWAYS rendered, never covered */}
+      <audio ref={remoteAudioRef} autoPlay playsInline style={{ display: 'none' }} />
+
+      {/* ════ TOP BAR — Back + Report ════ */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '16px 20px',
+        paddingTop: 'max(16px, env(safe-area-inset-top))',
+        zIndex: 20
+      }}>
+        {/* Back */}
+        <button onClick={handleEnd} style={{
+          width: '40px', height: '40px', borderRadius: '50%',
+          background: 'rgba(0,0,0,0.12)', border: 'none',
+          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: 'var(--text-primary)', fontSize: '20px'
+        }}>‹</button>
+
+        {/* Report — top right, red pill */}
+        {!hasReported ? (
+          <InCallReport
+            partner={{ id: partnerId, name: partnerDisplay }}
+            sessionId={sessionId}
+            onReported={() => setHasReported(true)}
+          />
+        ) : (
+          <div style={{
+            padding: '8px 14px', borderRadius: '20px',
+            background: 'rgba(16,185,129,0.12)',
+            border: '1px solid rgba(16,185,129,0.3)',
+            color: '#10B981', fontSize: '13px', fontWeight: 600
+          }}>✅ Reported</div>
+        )}
+      </div>
+
+      {/* ════ PARTNER CENTER SECTION ════ */}
+      <div style={{
+        flex: 1, display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        paddingTop: '80px', paddingBottom: '220px', gap: '12px'
+      }}>
+        {/* Avatar */}
+        <div style={{
+          width: '96px', height: '96px', borderRadius: '50%',
+          background: isConnected ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: '#fff', fontWeight: 800, fontSize: '38px',
+          boxShadow: isConnected
+            ? '0 0 0 12px rgba(124,58,237,0.15), 0 0 0 24px rgba(124,58,237,0.07)'
+            : 'none',
+          transition: 'all 0.4s'
+        }}>
+          {partnerDisplay[0].toUpperCase()}
+        </div>
+
+        {/* Name */}
+        <h1 style={{
+          color: 'var(--text-primary)', fontSize: '26px', fontWeight: 700,
+          margin: 0, letterSpacing: '-0.3px'
+        }}>{partnerDisplay}</h1>
+
+        {/* Duration */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '6px',
+          color: isConnected ? '#EF4444' : 'var(--text-muted)',
+          fontSize: '15px', fontWeight: 600
+        }}>
+          {isConnected && (
+            <div style={{
+              width: '8px', height: '8px', borderRadius: '50%',
+              background: '#EF4444', animation: 'pulse-dot 1s infinite'
+            }} />
           )}
+          {isConnected ? formatted : 'Connecting...'}
         </div>
-      )}
 
-      {/* ── Incoming Friend Request (BottomSheet) ── */}
-      <BottomSheet open={!!incomingReq} onClose={() => setIncomingReq(null)} title="Friend Request">
-        {incomingReq && (
-          <div className="friend-req-sheet">
-            <Avatar name={incomingReq.fromUser.displayName} size="lg" />
-            <p><strong>{incomingReq.fromUser.displayName}</strong> wants to be friends 👋</p>
-            <div className="friend-req-btns">
-              <Button variant="ghost" onClick={() => respondReq('reject')}>Decline</Button>
-              <Button fullWidth onClick={() => respondReq('accept')}>Accept</Button>
-            </div>
+        {/* Pool stat */}
+        {isConnected && onlineStats.voice > 0 && (
+          <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
+            🟢 {onlineStats.voice} in voice pool
+          </span>
+        )}
+
+        {/* Waveform */}
+        {isConnected && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '4px',
+            height: '48px', marginTop: '16px'
+          }}>
+            {[...Array(12)].map((_, i) => (
+              <div key={i} className="viz-bar" style={{
+                animationDelay: `${i * 0.07}s`,
+                animationDuration: `${0.6 + (i % 3) * 0.2}s`
+              }} />
+            ))}
           </div>
         )}
-      </BottomSheet>
+      </div>
+
+      {/* ════ BOTTOM CONTROLS — fixed ════ */}
+      <div style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0,
+        padding: '20px 24px',
+        paddingBottom: 'max(28px, env(safe-area-inset-bottom))',
+        background: 'linear-gradient(to top, var(--bg-primary) 80%, transparent)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px',
+        zIndex: 10
+      }}>
+
+        {/* ── SECONDARY ROW: Dare + Music + Add Friend ── */}
+        {isConnected && (
+          <div style={{
+            display: 'flex', gap: '28px',
+            alignItems: 'center', justifyContent: 'center'
+          }}>
+            <DareMode
+              socket={socket}
+              partner={{ id: partnerId, name: partnerDisplay, displayName: partnerDisplay }}
+              sessionId={sessionId}
+              userName={user?.displayName || user?.display_name}
+              isCallConnected={isConnected}
+              buttonOnly
+            />
+            <MusicSync
+              socket={socket}
+              isCallConnected={isConnected}
+              callAudioRef={remoteAudioRef}
+              mode="call"
+              buttonOnly
+            />
+            <FriendRequestButton
+              partner={{ id: partnerId, name: partnerDisplay }}
+              sessionId={sessionId}
+              buttonOnly
+            />
+          </div>
+        )}
+
+        {/* ── PRIMARY ROW: Mute + End + More ── */}
+        <div style={{
+          display: 'flex', gap: '24px',
+          alignItems: 'center', justifyContent: 'center'
+        }}>
+          {/* Mute */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+            <button onClick={toggleMute} style={{
+              width: '64px', height: '64px', borderRadius: '50%',
+              background: isMuted ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.12)',
+              color: isMuted ? '#EF4444' : 'var(--text-primary)',
+              fontSize: '24px', cursor: 'pointer', display: 'flex',
+              alignItems: 'center', justifyContent: 'center',
+              backdropFilter: 'blur(8px)',
+              border: isMuted ? '1px solid rgba(239,68,68,0.3)' : '1px solid var(--border-subtle)',
+              transition: 'all 0.2s'
+            }}>
+              {isMuted ? '🔇' : '🎤'}
+            </button>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '11px', fontWeight: 500 }}>
+              {isMuted ? 'Unmute' : 'Mute'}
+            </span>
+          </div>
+
+          {/* End Call — large */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+            <button onClick={handleEnd} style={{
+              width: '72px', height: '72px', borderRadius: '50%', border: 'none',
+              background: '#DC2626', color: '#fff', fontSize: '26px',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 4px 24px rgba(220,38,38,0.45)',
+              transition: 'transform 0.15s'
+            }}
+              onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.94)'; }}
+              onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+            >📵</button>
+            <span style={{ color: '#DC2626', fontSize: '11px', fontWeight: 600 }}>End</span>
+          </div>
+
+          {/* More (placeholder for future) */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+            <button style={{
+              width: '64px', height: '64px', borderRadius: '50%',
+              background: 'rgba(255,255,255,0.12)',
+              color: 'var(--text-primary)', fontSize: '22px', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              backdropFilter: 'blur(8px)', border: '1px solid var(--border-subtle)'
+            }}>⋯</button>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '11px', fontWeight: 500 }}>More</span>
+          </div>
+        </div>
+      </div>
+
+      {/* DareMode overlay (renders when dare is active) */}
+      {isConnected && (
+        <DareMode
+          socket={socket}
+          partner={{ id: partnerId, name: partnerDisplay, displayName: partnerDisplay }}
+          sessionId={sessionId}
+          userName={user?.displayName || user?.display_name}
+          isCallConnected={isConnected}
+          panelOnly
+        />
+      )}
+
+      {/* MusicSync panel (renders when open) */}
+      {isConnected && (
+        <MusicSync
+          socket={socket}
+          isCallConnected={isConnected}
+          callAudioRef={remoteAudioRef}
+          mode="call"
+          panelOnly
+        />
+      )}
     </div>
   );
 }

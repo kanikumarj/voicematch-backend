@@ -1,271 +1,115 @@
-/* FIX: [Area 1] CallScreen CSS — 2-row controls, z-index layers, mobile-first */
+/* FIX: CallScreen CSS — responsive, animations, z-index layers */
 
 .call-screen {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   min-height: 100dvh;
   background: var(--bg-primary);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  overflow: hidden; /* FIX: [Area 1] no scroll */
-  background-image: radial-gradient(ellipse at 50% 30%, rgba(124,58,237,0.12) 0%, transparent 60%);
-  z-index: 1; /* FIX: [Area 1] Base call UI layer */
+  overflow: hidden;
 }
 
-/* ── Connecting state ─────────────────────────────────────── */
-.call-state-connecting {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-5);
-  animation: fade-in var(--normal) var(--ease) both;
-}
-
-.call-avatar-ring {
-  position: relative;
-  width: 96px;
-  height: 96px;
-}
-
-.call-spinner-ring {
+/* ── Audio element never blocks — always at base layer ── */
+.call-screen audio {
   position: absolute;
-  inset: -6px;
-  border-radius: 50%;
-  border: 3px solid transparent;
-  border-top-color: var(--accent-primary);
-  animation: spin-ring 1s linear infinite;
+  z-index: -1;
+  pointer-events: none;
 }
 
-.call-state-connecting h2 {
-  font-size: var(--text-xl);
-  font-weight: 700;
-}
-
-.call-status-text {
-  color: var(--text-secondary);
-  font-size: var(--text-base);
-}
-
-.dots span {
-  animation: bounce-dot 1.4s ease-in-out infinite;
-  display: inline-block;
-}
-.dots span:nth-child(2) { animation-delay: 0.2s; }
-.dots span:nth-child(3) { animation-delay: 0.4s; }
-
-/* ── Connected state ──────────────────────────────────────── */
-.call-state-connected {
-  width: 100%;
-  height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  padding: max(var(--space-6), var(--safe-top)) var(--space-5) max(var(--space-5), var(--safe-bottom));
-}
-
-/* FIX: [Area 1] Partner section — top */
-.call-partner-section {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-}
-
-.call-header-info {}
-
-.call-partner-name {
-  font-size: var(--text-xl);
-  font-weight: 700;
-}
-
-.call-duration-badge {
-  font-size: var(--text-sm);
-  color: var(--success);
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-}
-
-.call-pool-stat {
-  font-size: var(--text-xs);
-  color: var(--text-muted);
-  font-weight: 500;
-  display: block;
-  margin-top: 2px;
-}
-
-/* ── Audio visualizer ─────────────────────────────────────── */
-.call-visualizer {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-
+/* ── Waveform visualization bars ── */
 .viz-bar {
   width: 4px;
-  height: 40px;
   background: var(--accent-primary);
-  border-radius: 99px;
+  border-radius: 2px;
   opacity: 0.7;
-  animation: wave-bar 0.8s ease-in-out infinite alternate;
-  transform-origin: center;
+  animation-name: wave-bar;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
 }
 
-/* ══════════════════════════════════════════════════════════
-   FIX: [Area 1] Two-row controls layout
-   ══════════════════════════════════════════════════════════ */
+/* ── Z-index layers ── */
+/* Controls: z-index 10 */
+/* Top bar (back + report): z-index 20 */
+/* Dare overlay: z-index 30 */
+/* Music panel: z-index 40 */
+/* Report modal: z-index 100-101 (handled in InCallReport) */
 
-/* Row 1 — Main controls (always visible) */
-.call-main-controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  padding: var(--space-3) 0;
-  z-index: 2;
+/* ── Animations ── */
+@keyframes spin-ring {
+  to { transform: rotate(360deg); }
 }
 
-/* Row 2 — Feature controls (collapsible on mobile) */
-.call-feature-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  padding: var(--space-2) 0 var(--space-3);
-  z-index: 2;
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.4); }
+  70% { box-shadow: 0 0 0 20px rgba(124, 58, 237, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0); }
 }
 
-/* FIX: [Area 1] Mobile: feature row hidden behind toggle */
-@media (max-width: 767px) {
-  .call-feature-row {
-    max-height: 0;
-    overflow: hidden;
-    opacity: 0;
-    transition: max-height 0.3s ease, opacity 0.2s ease, padding 0.3s ease;
-    padding: 0;
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes wave-bar {
+  0%, 100% { height: 4px; }
+  50% { height: 28px; }
+}
+
+@keyframes slide-up {
+  from { transform: translateX(-50%) translateY(20px); opacity: 0; }
+  to   { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Responsive ── */
+
+/* Small phones (320-389px) */
+@media (max-width: 389px) {
+  .call-screen button[style*="width: 64px"] {
+    width: 56px !important;
+    height: 56px !important;
   }
-  .call-feature-row.show {
-    max-height: 120px;
-    opacity: 1;
-    padding: var(--space-2) 0 var(--space-3);
+  .call-screen button[style*="width: 72px"] {
+    width: 64px !important;
+    height: 64px !important;
+  }
+  .call-screen button[style*="width: 56px"] {
+    width: 48px !important;
+    height: 48px !important;
   }
 }
 
-/* FIX: [Area 1] Desktop: show both rows always, hide toggle */
+/* Tablets / desktop */
 @media (min-width: 768px) {
-  .call-feature-row {
-    max-height: none !important;
-    opacity: 1 !important;
-    padding: var(--space-2) 0 var(--space-3) !important;
-  }
-  .call-ctrl-more {
-    display: none !important;
+  .call-screen {
+    max-width: 480px;
+    margin: 0 auto;
+    border-left: 1px solid var(--border-subtle);
+    border-right: 1px solid var(--border-subtle);
   }
 }
 
-/* ── Control buttons ──────────────────────────────────────── */
-.call-ctrl {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-1);
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: var(--bg-secondary);
-  border: 1.5px solid var(--border-default);
-  color: var(--text-primary);
-  font-size: var(--text-xs);
-  font-weight: 600;
-  transition: all var(--fast) var(--ease);
-  position: relative;
-  padding-top: 0;
-  cursor: pointer;
+/* Music panel responsive */
+@media (max-width: 480px) {
+  .music-panel-container {
+    width: calc(100vw - 16px) !important;
+    border-radius: 16px 16px 0 0 !important;
+    bottom: 0 !important;
+  }
 }
 
-.call-ctrl span {
-  font-size: 10px;
-  font-weight: 600;
-  margin-top: 2px;
-  position: absolute;
-  bottom: -18px;
-  white-space: nowrap;
+/* Touch device min tap targets */
+@media (hover: none) and (pointer: coarse) {
+  .call-screen button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .call-screen input[type="range"] {
+    height: 24px;
+  }
 }
-
-.call-ctrl:hover { background: var(--bg-elevated); transform: scale(1.05); }
-.call-ctrl:active { transform: scale(0.95); }
-
-.ctrl-active {
-  background: rgba(239,68,68,0.15) !important;
-  border-color: var(--error) !important;
-  color: var(--error) !important;
-}
-
-.ctrl-end {
-  background: var(--error) !important;
-  border-color: transparent !important;
-  color: #fff !important;
-  width: 72px;
-  height: 72px;
-  box-shadow: 0 4px 16px rgba(239,68,68,0.4);
-}
-
-.ctrl-friend.ctrl-sent {
-  background: rgba(16,185,129,0.15);
-  border-color: var(--success);
-  color: var(--success);
-}
-
-/* More button styling */
-.call-ctrl-more {
-  background: var(--bg-tertiary) !important;
-  border-color: var(--border-subtle) !important;
-}
-
-/* ── In-call report button positioning ────────────────────── */
-.incall-report-btn {
-  width: 64px !important;
-  height: 64px !important;
-  border-radius: 50% !important;
-  flex-direction: column !important;
-  padding: 0 !important;
-}
-
-/* ── Ended ────────────────────────────────────────────────── */
-.call-state-ended {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-3);
-  animation: fade-in var(--normal) var(--ease) both;
-}
-
-.call-ended-icon { font-size: 64px; }
-.call-state-ended h2 { font-size: var(--text-xl); }
-.call-state-ended p  { color: var(--text-secondary); }
-
-/* ── Friend request sheet ─────────────────────────────────── */
-.friend-req-sheet {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-4);
-  padding: var(--space-4);
-  text-align: center;
-}
-
-.friend-req-btns {
-  display: flex;
-  gap: var(--space-3);
-  width: 100%;
-}
-
-/* ══════════════════════════════════════════════════════════
-   FIX: [Area 1] Z-index layers for overlays
-   ══════════════════════════════════════════════════════════ */
-
-/* Music panel: z-index 10 */
-/* Report sheet: z-index 20 (handled in InCallReport.jsx) */
-/* Dare overlay: z-index 30 (handled in DareMode.jsx) */
-/* Incoming call: z-index 50 (handled in IncomingCallModal) */

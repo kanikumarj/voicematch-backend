@@ -289,7 +289,13 @@ export default function ChatPage() {
     grouped.push(m);
   });
 
-  const friendName = friendInfo?.displayName || friendInfo?.display_name || (loading ? '…' : 'Friend');
+  // FIX: Robust friend name resolution — handle all possible field names
+  const friendName = friendInfo?.displayName
+    || friendInfo?.display_name
+    || friendInfo?.name
+    || friendInfo?.username
+    || friendInfo?.email?.split('@')[0]
+    || (loading ? '…' : 'Friend');
 
   // FIX: [Area 5] Get socket for music sync
   let chatSocket = null;
