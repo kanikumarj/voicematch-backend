@@ -1,7 +1,9 @@
+// FIX: [Area 6] GlobalCallManager — enhanced direct call handling with proper routing
+
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getSocket } from '../lib/socket';
-import { toast } from './ui/Toast';
+import { useToast } from './ui/Toast';
 import IncomingCallModal from './friends/IncomingCallModal';
 import { useAuth } from '../context/AuthContext';
 
@@ -10,6 +12,7 @@ export default function GlobalCallManager({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { token } = useAuth();
+  const toast = useToast();
 
   useEffect(() => {
     if (!token) return;
@@ -23,23 +26,42 @@ export default function GlobalCallManager({ children }) {
     
     if (!socket) return;
 
+    // FIX: [Area 6] Incoming call with caller info
     const onIncoming = ({ fromUser, callId }) => {
       setIncomingCall({ fromUser, callId });
-      // Play ringtone here if you want
     };
 
     const onMissed = ({ callId }) => {
       setIncomingCall(prev => prev?.callId === callId ? null : prev);
     };
 
-    const onAccepted = ({ callId, initiator }) => {
+    // FIX: [Area 6] Direct call accepted — route to dashboard with call state
+    const onAccepted = ({ callId, initiator, sessionId, partnerName, partnerId }) => {
       setIncomingCall(null);
-      // Redirect to dashboard where the call screen will pick up the connected state
-      // Actually, we need to pass a flag so Dashboard knows to render CallScreen directly
-      // However, the socket will also restore state if we are 'in_call' on the backend.
+      
+      // Navigate to dashboard with direct call state
       if (location.pathname !== '/dashboard') {
-        navigate('/dashboard', { state: { directCallAccepted: true, initiator } });
+        navigate('/dashboard', { 
+          state: { 
+            directCallAccepted: true, 
+            initiator,
+            sessionId,
+            partnerName,
+            partnerId
+          } 
+        });
+      } else {
+        // Already on dashboard — emit custom event so Dashboard can handle it
+        window.dispatchEvent(new CustomEvent('direct_call_connected', {
+          detail: { initiator, sessionId, partnerName, partnerId }
+        }));
       }
+    };
+
+    // FIX: [Area 6] Cancelled (caller hung up before answer)
+    const onCancelled = ({ callId }) => {
+      setIncomingCall(prev => prev?.callId === callId ? null : prev);
+      toast.info('Call was cancelled');
     };
 
     const onRejected = () => {
@@ -54,31 +76,54 @@ export default function GlobalCallManager({ children }) {
       toast.info('Friend is offline.');
     };
 
+    const onRinging = ({ callId }) => {
+      // Caller confirmation — call is ringing
+    };
+
+    const onError = ({ message }) => {
+      toast.error(message || 'Call failed');
+    };
+
     socket.on('incoming_direct_call', onIncoming);
     socket.on('direct_call_missed', onMissed);
     socket.on('direct_call_accepted', onAccepted);
+    socket.on('direct_call_cancelled', onCancelled);
     socket.on('direct_call_rejected', onRejected);
     socket.on('friend_busy', onBusy);
     socket.on('friend_offline', onOffline);
+    socket.on('direct_call_ringing', onRinging);
+    socket.on('direct_call_error', onError);
 
     return () => {
       socket.off('incoming_direct_call', onIncoming);
       socket.off('direct_call_missed', onMissed);
       socket.off('direct_call_accepted', onAccepted);
+      socket.off('direct_call_cancelled', onCancelled);
       socket.off('direct_call_rejected', onRejected);
       socket.off('friend_busy', onBusy);
       socket.off('friend_offline', onOffline);
+      socket.off('direct_call_ringing', onRinging);
+      socket.off('direct_call_error', onError);
     };
-  }, [navigate, location]);
+  }, [navigate, location, token, toast]);
 
   function acceptCall() {
     if (!incomingCall) return;
-    getSocket().emit('direct_call_response', { callId: incomingCall.callId, action: 'accept' });
+    try {
+      getSocket().emit('direct_call_response', { callId: incomingCall.callId, action: 'accept' });
+    } catch (err) {
+      toast.error('Failed to accept call');
+      setIncomingCall(null);
+    }
   }
 
   function rejectCall() {
     if (!incomingCall) return;
-    getSocket().emit('direct_call_response', { callId: incomingCall.callId, action: 'reject' });
+    try {
+      getSocket().emit('direct_call_response', { callId: incomingCall.callId, action: 'reject' });
+    } catch (err) {
+      // Best effort
+    }
     setIncomingCall(null);
   }
 

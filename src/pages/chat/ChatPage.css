@@ -168,12 +168,26 @@
   opacity: 0.7;
 }
 
+/* FIX: [Area 4] Time + status tick wrapper */
+.chat-time-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 3px;
+  margin-top: 2px;
+}
+
 .chat-time {
   display: block;
   font-size: 10px;
   opacity: 0.65;
-  margin-top: 2px;
   text-align: right;
+}
+
+/* FIX: [Area 7] Music button in chat header */
+.chat-music-btn:hover {
+  background: rgba(124,58,237,0.2) !important;
+  color: var(--accent-primary) !important;
 }
 
 /* ── Typing indicator ─────────────────────────────────────── */

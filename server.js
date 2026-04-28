@@ -19,6 +19,8 @@ const profileRouter         = require('./modules/profile/profile.routes');
 const { apiLimiter }        = require('./middleware/rateLimiter');
 const { globalErrorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const { runStartupCleanup } = require('./modules/resilience/startup.cleanup');
+// NEW: [Area 2] Call watchdog
+const { startCallWatchdog } = require('./modules/resilience/call-watchdog');
 // NEW: [Feature 4] Public profile routes
 const publicProfileRoutes = require('./modules/profile/public-profile.routes');
 // NEW: [Feature 5] Announcement system
@@ -89,6 +91,8 @@ app.use('/api/users',    profileRouter);
 app.use('/api/profile',  profileRouter); // FIXED: Alias for /api/profile
 app.use('/api/friends',  require('./modules/friends/friends.routes'));
 app.use('/api/chat',     require('./modules/chat/chat.routes'));
+// NEW: [Area 7] Music search API
+app.use('/api/music',    require('./modules/music/music.routes'));
 
 // ─── Admin API (separate from user routes) ────────────────────────────────────
 app.use('/admin-api',    require('./modules/admin/admin.routes'));
@@ -122,6 +126,8 @@ startAnnouncementCron(io);
 httpServer.listen(PORT, async () => {
   process.stdout.write(`[SERVER] Listening on port ${PORT}\n`);
   await runStartupCleanup();
+  // NEW: [Area 2] Start call watchdog — cleans stuck sessions every 5 minutes
+  startCallWatchdog(io);
 });
 
 module.exports = app;

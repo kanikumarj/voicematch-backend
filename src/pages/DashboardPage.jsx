@@ -113,8 +113,18 @@ export default function DashboardPage() {
       setPartner(null);
       setAppState('searching');
     }
-    function onDirectCall({ initiator }) {
+    // FIX: [Area 6] Handle direct call with full partner info
+    function onDirectCall({ initiator, sessionId, partnerName, partnerId }) {
       setIsInitiator(initiator);
+      if (partnerId || partnerName) {
+        setPartner(prev => ({
+          ...prev,
+          id: partnerId || prev?.id,
+          name: partnerName || prev?.name,
+          sessionId: sessionId || prev?.sessionId,
+        }));
+      }
+      setMatchMode('voice');
       setAppState('connecting');
     }
     function onQueuePosition({ waiting }) {
@@ -147,6 +157,26 @@ export default function DashboardPage() {
       socket.off('disconnect',           onDisconnect);
     };
   }, [toast]); // stable deps only
+
+  // FIX: [Area 6] Listen for direct call window event (when already on dashboard)
+  useEffect(() => {
+    const handleDirectCallEvent = (e) => {
+      const { initiator, sessionId, partnerName, partnerId } = e.detail || {};
+      setIsInitiator(!!initiator);
+      if (partnerId || partnerName) {
+        setPartner(prev => ({
+          ...prev,
+          id: partnerId || prev?.id,
+          name: partnerName || prev?.name,
+          sessionId: sessionId || prev?.sessionId,
+        }));
+      }
+      setMatchMode('voice');
+      setAppState('connecting');
+    };
+    window.addEventListener('direct_call_connected', handleDirectCallEvent);
+    return () => window.removeEventListener('direct_call_connected', handleDirectCallEvent);
+  }, []);
 
   // Search timer
   useEffect(() => {

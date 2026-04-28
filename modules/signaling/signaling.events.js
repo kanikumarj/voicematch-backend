@@ -1,8 +1,11 @@
 'use strict';
 
+// FIX: [Area 2] Complete signaling events with forceCleanupCall
+
 const presence = require('../presence/presence.service');
 const { pairKey } = require('../matchmaking/matchmaking.service');
 const { updateStreak } = require('../call/call.service');
+const db = require('../../db');
 
 /**
  * Resolve partner's current socket reference.
@@ -17,6 +20,79 @@ async function getPartnerSocket(userId, io) {
 
   const partnerSocket = io.sockets.sockets.get(partnerSocketId);
   return partnerSocket || null;
+}
+
+/**
+ * FIX: [Area 2] Comprehensive cleanup function for all call exit paths.
+ * Ensures session is closed, pair is removed, and user status is reset.
+ */
+async function forceCleanupCall(userId, reason) {
+  try {
+    const redis = require('../../db/redis');
+
+    // 1. Get partner before removing pair
+    const partnerId = await presence.getPartner(userId);
+
+    // 2. Find active session
+    let sessionId = null;
+    if (partnerId) {
+      const key = pairKey(userId, partnerId);
+      sessionId = await redis.hget('session_id_map', key);
+    }
+
+    // 3. Update session in DB — close it
+    if (sessionId) {
+      await db.query(
+        `UPDATE sessions
+         SET ended_at = COALESCE(ended_at, NOW()),
+             end_reason = COALESCE(end_reason, $1),
+             duration_seconds = COALESCE(
+               duration_seconds,
+               EXTRACT(EPOCH FROM (NOW() - started_at))::INTEGER
+             )
+         WHERE id = $2
+         AND ended_at IS NULL`,
+        [reason, sessionId]
+      );
+    }
+
+    // 4. Remove pair map and session_id_map
+    if (partnerId) {
+      const key = pairKey(userId, partnerId);
+      await redis.hdel('session_id_map', key);
+      await presence.removePair(userId, partnerId);
+      await presence.clearReady(userId, partnerId);
+    }
+
+    // 5. Update user status to online
+    await db.query(
+      `UPDATE users SET status = 'online'
+       WHERE id = $1 AND status IN ('in_call', 'searching')`,
+      [userId]
+    );
+
+    // 6. Update streak if call was long enough
+    if (sessionId) {
+      try {
+        const sessionResult = await db.query(
+          `SELECT duration_seconds FROM sessions WHERE id = $1`,
+          [sessionId]
+        );
+        const duration = sessionResult.rows[0]?.duration_seconds || 0;
+        if (duration > 30) {
+          await updateStreak(userId);
+          if (partnerId) await updateStreak(partnerId);
+        }
+      } catch (e) {
+        // Non-fatal — streak update failure shouldn't block cleanup
+      }
+    }
+
+    return partnerId;
+  } catch (err) {
+    process.stderr.write(`[CLEANUP] forceCleanupCall error: ${JSON.stringify({ userId, reason, error: err.message })}\n`);
+    return null;
+  }
 }
 
 /**
@@ -91,41 +167,25 @@ function registerSignalingEvents(socket, io) {
     socket.emit('call_end', { reason: 'user_ended' });
   });
 
-  // ── call_end ──────────────────────────────────────────────────────────────
+  // FIX: [Area 2] call_end — user explicitly ended, with comprehensive cleanup
   socket.on('call_end', async ({ reason = 'user_ended' } = {}) => {
     try {
-      const partnerId       = await presence.getPartner(userId);
-      const partnerSocketId = partnerId ? await presence.getUserSocket(partnerId) : null;
+      const partnerId = await forceCleanupCall(userId, reason === 'skip' ? 'skip' : 'user_disconnect');
 
       // Notify partner
-      if (partnerSocketId) {
-        io.to(partnerSocketId).emit('partner_disconnected', { reason });
-      }
-
-      // Update session in DB
-      const redis  = require('../../db/redis');
-      const key    = partnerId ? pairKey(userId, partnerId) : null;
-      if (key) {
-        const sessionId = await redis.hget('session_id_map', key);
-        if (sessionId) {
-          const endReason = reason === 'skip' ? 'skip' : 'user_disconnect';
-          const duration = await presence.endSession(sessionId, endReason);
-          
-          if (duration > 30) {
-            await updateStreak(userId);
-            if (partnerId) await updateStreak(partnerId);
-          }
-          await redis.hdel('session_id_map', key);
+      if (partnerId) {
+        const partnerSocketId = await presence.getUserSocket(partnerId);
+        if (partnerSocketId) {
+          io.to(partnerSocketId).emit('partner_disconnected', { reason });
         }
+
+        // FIX: [Area 2] Update partner status
+        await db.query(
+          `UPDATE users SET status = 'online'
+           WHERE id = $1 AND status = 'in_call'`,
+          [partnerId]
+        );
       }
-
-      // Clean up pair for both
-      await presence.removePair(userId, partnerId);
-      await presence.clearReady(userId, partnerId);
-
-      // Set statuses
-      await presence.setUserStatus(userId, 'online');
-      if (partnerId) await presence.setUserStatus(partnerId, 'online');
 
       // Emit confirmation to caller
       socket.emit('call_ended', { reason });
@@ -136,4 +196,4 @@ function registerSignalingEvents(socket, io) {
   });
 }
 
-module.exports = { registerSignalingEvents };
+module.exports = { registerSignalingEvents, forceCleanupCall };

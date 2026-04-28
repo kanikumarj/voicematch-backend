@@ -1,3 +1,5 @@
+// FIX: [Area 5 & 7] ChatPage — friend header, notifications, music button, read receipts
+
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -8,6 +10,8 @@ import MessageStatus from '../../components/chat/MessageStatus';
 import OnlineStatus from '../../components/chat/OnlineStatus';
 import { useToast } from '../../components/ui/Toast';
 import { useKeyboard } from '../../hooks/useKeyboard';
+// FIX: [Area 7] Music sync in friends chat
+import MusicSync from '../../modules/call/MusicSync';
 import './ChatPage.css';
 
 const API = import.meta.env.VITE_API_URL;
@@ -45,12 +49,47 @@ export default function ChatPage() {
   const [friendInfo, setFriendInfo] = useState(state?.friend || null);
   const [showScrollBtn, setScroll]  = useState(false);
   const [loading, setLoading]       = useState(!state?.friend);
+  // FIX: [Area 7] Music panel state
+  const [musicOpen, setMusicOpen]   = useState(false);
 
   const endRef      = useRef(null);
   const areaRef     = useRef(null);
   const typingTimer = useRef(null);
   const tempCounter = useRef(0);
   const prevMsgLen  = useRef(0);
+
+  // FIX: [Area 5] Request notification permission on mount
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {});
+    }
+  }, []);
+
+  // FIX: [Area 5] Show browser notification for new messages
+  const showMessageNotification = (senderName, content) => {
+    try {
+      if ('Notification' in window &&
+          Notification.permission === 'granted' &&
+          document.hidden) {
+        const notification = new Notification(senderName || 'New Message', {
+          body: content.length > 60
+            ? content.substring(0, 60) + '...'
+            : content,
+          icon: '/icons/icon-192.png',
+          badge: '/icons/icon-192.png',
+          tag: `chat-${friendshipId}`,
+          renotify: true
+        });
+        notification.onclick = () => {
+          window.focus();
+          navigate(`/chat/${friendshipId}`);
+          notification.close();
+        };
+      }
+    } catch (err) {
+      // Notifications are non-critical
+    }
+  };
 
   // ── Load friend info + messages ─────────────────────────────────────────────
   useEffect(() => {
@@ -71,7 +110,7 @@ export default function ChatPage() {
       })
       .catch(() => setLoading(false));
 
-    // Load friend profile — always fetch fresh data for id + online status
+    // FIX: [Area 5] Load friend profile — always fetch fresh data for id + online status
     fetch(`${API}/api/friends/${friendshipId}/profile`, {
       headers: { Authorization: `Bearer ${token}` },
     })
@@ -102,6 +141,8 @@ export default function ChatPage() {
 
     // Tell backend user is viewing this conversation
     socket.emit('viewing_conversation', { friendshipId });
+    // FIX: [Area 4] Also emit chat_mark_read
+    socket.emit('chat_mark_read', { friendshipId });
 
     function onNewMessage(msg) {
       if (String(msg.friendshipId) === String(friendshipId)) {
@@ -113,6 +154,16 @@ export default function ChatPage() {
           return [...p, { ...msg, fromMe: false }];
         });
         socket.emit('chat_mark_read', { friendshipId });
+
+        // FIX: [Area 5] Show notification if tab not visible
+        showMessageNotification(msg.senderName || friendName, msg.text || msg.content || '');
+      }
+    }
+
+    // FIX: [Area 4] Message status update (delivered)
+    function onStatusUpdate({ messageId, status, friendshipId: fId }) {
+      if (String(fId) === String(friendshipId) || !fId) {
+        setMessages(p => p.map(m => m.id === messageId ? { ...m, status } : m));
       }
     }
 
@@ -122,9 +173,17 @@ export default function ChatPage() {
       }
     }
 
-    function onMessagesRead({ friendshipId: fId }) {
+    // FIX: [Area 4] Messages read — update with message IDs
+    function onMessagesRead({ friendshipId: fId, messageIds }) {
       if (String(fId) === String(friendshipId)) {
-        setMessages(p => p.map(m => m.senderId === user?.id ? { ...m, status: 'read' } : m));
+        setMessages(p => p.map(m => {
+          // If messageIds provided, only update those specific messages
+          if (messageIds && messageIds.length > 0) {
+            return messageIds.includes(m.id) ? { ...m, status: 'read' } : m;
+          }
+          // Fallback: mark all own messages as read
+          return m.senderId === user?.id ? { ...m, status: 'read' } : m;
+        }));
       }
     }
 
@@ -140,8 +199,10 @@ export default function ChatPage() {
     function onRemoved() { toast.info('You are no longer friends'); navigate('/friends'); }
 
     socket.on('new_message',            onNewMessage);
+    socket.on('message_status_update',  onStatusUpdate);
     socket.on('message_delivered',      onMessageDelivered);
     socket.on('messages_read',          onMessagesRead);
+    socket.on('chat_read_receipt',      onMessagesRead);
     socket.on('chat_message_confirmed', onConfirm);
     socket.on('friend_typing',          onTyping);
     socket.on('friend_stopped_typing',  onStopTyping);
@@ -150,8 +211,10 @@ export default function ChatPage() {
 
     return () => {
       socket.off('new_message',            onNewMessage);
+      socket.off('message_status_update',  onStatusUpdate);
       socket.off('message_delivered',      onMessageDelivered);
       socket.off('messages_read',          onMessagesRead);
+      socket.off('chat_read_receipt',      onMessagesRead);
       socket.off('chat_message_confirmed', onConfirm);
       socket.off('friend_typing',          onTyping);
       socket.off('friend_stopped_typing',  onStopTyping);
@@ -228,9 +291,13 @@ export default function ChatPage() {
 
   const friendName = friendInfo?.displayName || friendInfo?.display_name || (loading ? '…' : 'Friend');
 
+  // FIX: [Area 5] Get socket for music sync
+  let chatSocket = null;
+  try { chatSocket = getSocket(); } catch {}
+
   return (
     <div className="chat-page" style={{ paddingBottom: keyboardHeight || 0 }}>
-      {/* Header */}
+      {/* FIX: [Area 5] Header — shows friend name, status, call + music buttons */}
       <header className="chat-header">
         <button className="chat-back" onClick={() => navigate(-1)} aria-label="Back">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -260,12 +327,41 @@ export default function ChatPage() {
           </div>
         </div>
 
+        {/* FIX: [Area 7] Music button in chat header */}
+        <button
+          className="chat-music-btn"
+          onClick={() => setMusicOpen(!musicOpen)}
+          aria-label="Music"
+          style={{
+            width: '36px', height: '36px', borderRadius: '50%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: musicOpen ? 'rgba(124,58,237,0.2)' : 'var(--bg-tertiary)',
+            border: musicOpen ? '1px solid var(--accent-primary)' : '1px solid transparent',
+            color: musicOpen ? 'var(--accent-primary)' : 'var(--text-secondary)',
+            cursor: 'pointer', transition: 'all var(--fast)',
+            fontSize: '16px',
+          }}
+        >
+          🎵
+        </button>
+
+        {/* FIX: [Area 5] Call button */}
         <button className="chat-call-btn" onClick={callFriend} aria-label="Voice call">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.41 2 2 0 0 1 3.6 1.24h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81a16 16 0 0 0 5.95 5.95l.87-.87a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
           </svg>
         </button>
       </header>
+
+      {/* FIX: [Area 7] Music panel below header */}
+      {musicOpen && chatSocket && (
+        <MusicSync
+          socket={chatSocket}
+          isCallConnected={true}
+          mode="chat"
+          friendshipId={friendshipId}
+        />
+      )}
 
       {/* Messages Area */}
       <div className="chat-messages" ref={areaRef} onScroll={handleScroll}>
@@ -290,6 +386,7 @@ export default function ChatPage() {
                 {item.isDeleted ? <em className="deleted-msg">🚫 Message deleted</em> : <span>{item.content || item.text}</span>}
                 <div className="chat-time-wrap">
                   <span className="chat-time">{fmtTime(item.sentAt || item.createdAt)}</span>
+                  {/* FIX: [Area 4] Show ticks for own messages */}
                   {isOwn && <MessageStatus status={item.status} />}
                 </div>
               </div>

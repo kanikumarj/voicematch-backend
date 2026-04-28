@@ -1,5 +1,7 @@
 'use strict';
 
+// FIX: [Area 4] Chat events with delivery receipts, read receipts, and friend music sync
+
 const db = require('../../db');
 const presence = require('../presence/presence.service');
 const { getFriendshipId } = require('../friends/friends.helpers');
@@ -7,21 +9,28 @@ const { getFriendshipId } = require('../friends/friends.helpers');
 function registerChatEvents(socket, io) {
   const userId = socket.data.user.id;
 
+  // FIX: [Area 4] Helper to get friend socket by friendship ID
   async function getFriendSocketByFriendship(friendshipId) {
-    const { rows } = await db.query(
-      `SELECT user_a_id, user_b_id FROM friendships WHERE id = $1`,
-      [friendshipId]
-    );
-    if (!rows.length) return null;
-    const { user_a_id, user_b_id } = rows[0];
-    if (user_a_id !== userId && user_b_id !== userId) return null;
-    
-    const friendId = user_a_id === userId ? user_b_id : user_a_id;
-    const friendSocketId = await presence.getUserSocket(friendId);
-    return { friendId, friendSocketId, isA: user_a_id === userId };
+    try {
+      const { rows } = await db.query(
+        `SELECT user_a_id, user_b_id FROM friendships WHERE id = $1`,
+        [friendshipId]
+      );
+      if (!rows.length) return null;
+      const { user_a_id, user_b_id } = rows[0];
+      if (user_a_id !== userId && user_b_id !== userId) return null;
+
+      const friendId = user_a_id === userId ? user_b_id : user_a_id;
+      const friendSocketId = await presence.getUserSocket(friendId);
+      return { friendId, friendSocketId, isA: user_a_id === userId };
+    } catch (err) {
+      process.stderr.write(`[CHAT] getFriendSocket error: ${err.message}\n`);
+      return null;
+    }
   }
 
   // ── chat_send_message ──────────────────────────────────────────────────────
+  // FIX: [Area 4] Enhanced with delivery status tracking
   socket.on('chat_send_message', async ({ friendshipId, content, tempId }) => {
     try {
       if (!content || !content.trim()) return;
@@ -46,6 +55,7 @@ function registerChatEvents(socket, io) {
         [content.substring(0, 50), friendshipId]
       );
 
+      // FIX: [Area 4] Confirm to sender with 'sent' status (single tick)
       socket.emit('chat_message_confirmed', { 
         tempId, 
         messageId: message.id, 
@@ -54,7 +64,7 @@ function registerChatEvents(socket, io) {
       });
 
       if (friendSocketId) {
-        // Emit new_message for notifications and real-time chat
+        // FIX: [Area 4] Emit new_message for notifications and real-time chat
         io.to(friendSocketId).emit('new_message', {
           id: message.id,
           senderId: userId,
@@ -62,7 +72,8 @@ function registerChatEvents(socket, io) {
           text: content,
           createdAt: message.sent_at,
           friendshipId,
-          fromMe: false
+          fromMe: false,
+          status: 'delivered'
         });
 
         // Legacy event for backward compatibility
@@ -72,27 +83,38 @@ function registerChatEvents(socket, io) {
             senderId: userId,
             content,
             sentAt: message.sent_at,
-            friendshipId
+            friendshipId,
+            status: 'delivered'
           }
         });
 
-        // Mark as delivered
+        // FIX: [Area 4] Mark as delivered in DB
         await db.query(
-          `UPDATE chat_messages SET status = 'delivered' WHERE id = $1`,
+          `UPDATE chat_messages SET status = 'delivered', delivered_at = NOW() WHERE id = $1`,
           [message.id]
         );
         
+        // FIX: [Area 4] Notify sender: double tick (delivered)
+        socket.emit('message_status_update', { 
+          messageId: message.id, 
+          status: 'delivered',
+          friendshipId 
+        });
+
+        // Legacy event
         socket.emit('message_delivered', { 
           messageId: message.id, 
           friendshipId 
         });
       }
+      // If partner offline: message stays 'sent' (single tick)
     } catch (err) {
       process.stderr.write(`[CHAT] send_message error: ${err.message}\n`);
     }
   });
 
   // ── viewing_conversation / chat_mark_read ───────────────────────────────────
+  // FIX: [Area 4] Enhanced with read_at timestamp tracking
   const handleMarkRead = async ({ friendshipId }) => {
     try {
       const friendInfo = await getFriendSocketByFriendship(friendshipId);
@@ -105,18 +127,22 @@ function registerChatEvents(socket, io) {
         [friendshipId]
       );
 
-      // Mark all messages as read
-      await db.query(
+      // FIX: [Area 4] Mark all messages as read with read_at timestamp
+      const updated = await db.query(
         `UPDATE chat_messages 
-         SET status = 'read' 
-         WHERE friendship_id = $1 AND sender_id = $2 AND status != 'read'`,
+         SET status = 'read', read_at = NOW()
+         WHERE friendship_id = $1 AND sender_id = $2 AND status != 'read'
+         RETURNING id`,
         [friendshipId, friendId]
       );
+
+      const messageIds = updated.rows.map(r => r.id);
       
-      if (friendSocketId) {
-        // Emit to partner that their messages were read
+      if (friendSocketId && messageIds.length > 0) {
+        // FIX: [Area 4] Emit to partner that their messages were read (blue tick)
         io.to(friendSocketId).emit('messages_read', { 
           friendshipId,
+          messageIds,
           byUserId: userId,
           readAt: new Date().toISOString() 
         });
@@ -126,7 +152,9 @@ function registerChatEvents(socket, io) {
           readAt: new Date().toISOString() 
         });
       }
-    } catch (err) { }
+    } catch (err) {
+      process.stderr.write(`[CHAT] mark_read error: ${err.message}\n`);
+    }
   };
 
   socket.on('chat_mark_read', handleMarkRead);
@@ -139,7 +167,7 @@ function registerChatEvents(socket, io) {
       if (friendInfo?.friendSocketId) {
         io.to(friendInfo.friendSocketId).emit('friend_typing', { friendshipId, userId });
       }
-    } catch (err) { }
+    } catch (err) { /* non-critical */ }
   });
 
   // ── chat_typing_stop ───────────────────────────────────────────────────────
@@ -149,7 +177,70 @@ function registerChatEvents(socket, io) {
       if (friendInfo?.friendSocketId) {
         io.to(friendInfo.friendSocketId).emit('friend_stopped_typing', { friendshipId, userId });
       }
-    } catch (err) { }
+    } catch (err) { /* non-critical */ }
+  });
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // NEW: [Area 7] Friend Music Sync Events
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // FIX: [Area 7] Music share in friends chat
+  socket.on('friend_music_share', async ({ friendshipId, videoId, title, thumbnail }) => {
+    try {
+      const friendInfo = await getFriendSocketByFriendship(friendshipId);
+      if (!friendInfo) return;
+
+      const payload = { videoId, title, thumbnail };
+      socket.emit('friend_music_started', { ...payload, isSharer: true });
+      if (friendInfo.friendSocketId) {
+        io.to(friendInfo.friendSocketId).emit('friend_music_started', { ...payload, isSharer: false });
+      }
+    } catch (err) {
+      process.stderr.write(`[CHAT] friend_music_share error: ${err.message}\n`);
+    }
+  });
+
+  // FIX: [Area 7] Music playback control in friends chat
+  socket.on('friend_music_control', async ({ friendshipId, action, timestamp }) => {
+    try {
+      const friendInfo = await getFriendSocketByFriendship(friendshipId);
+      if (!friendInfo?.friendSocketId) return;
+      io.to(friendInfo.friendSocketId).emit('friend_music_control', {
+        action,
+        timestamp,
+        serverTime: Date.now()
+      });
+    } catch (err) {
+      process.stderr.write(`[CHAT] friend_music_control error: ${err.message}\n`);
+    }
+  });
+
+  // FIX: [Area 7] Stop music in friends chat
+  socket.on('friend_music_stop', async ({ friendshipId }) => {
+    try {
+      const friendInfo = await getFriendSocketByFriendship(friendshipId);
+      if (friendInfo?.friendSocketId) {
+        io.to(friendInfo.friendSocketId).emit('friend_music_stopped');
+      }
+      socket.emit('friend_music_stopped');
+    } catch (err) {
+      process.stderr.write(`[CHAT] friend_music_stop error: ${err.message}\n`);
+    }
+  });
+
+  // FIX: [Area 7] Add to music queue in friends chat
+  socket.on('friend_music_queue_add', async ({ friendshipId, videoId, title, thumbnail }) => {
+    try {
+      const friendInfo = await getFriendSocketByFriendship(friendshipId);
+      if (!friendInfo) return;
+      const queueItem = { videoId, title, thumbnail, addedBy: userId };
+      socket.emit('friend_music_queued', { queueItem });
+      if (friendInfo.friendSocketId) {
+        io.to(friendInfo.friendSocketId).emit('friend_music_queued', { queueItem });
+      }
+    } catch (err) {
+      process.stderr.write(`[CHAT] friend_music_queue error: ${err.message}\n`);
+    }
   });
 }
 

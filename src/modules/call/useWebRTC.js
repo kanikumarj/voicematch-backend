@@ -1,3 +1,5 @@
+// FIX: [Area 2] useWebRTC — comprehensive cleanup on ALL exit paths
+
 import { useRef, useState, useCallback, useEffect } from 'react';
 
 const API_BASE = import.meta.env.VITE_API_URL;
@@ -21,36 +23,61 @@ export function useWebRTC(socket, token) {
 
   // ── Fetch TURN credentials ──────────────────────────────────────────────────
   async function fetchIceServers() {
-    const res = await fetch(`${API_BASE}/api/call/turn-credentials`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) throw new Error('Failed to fetch TURN credentials');
-    const { iceServers } = await res.json();
-    return iceServers;
+    try {
+      const res = await fetch(`${API_BASE}/api/call/turn-credentials`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Failed to fetch TURN credentials');
+      const { iceServers } = await res.json();
+      return iceServers;
+    } catch (err) {
+      console.error('[WebRTC] TURN fetch error:', err.message);
+      // FIX: [Area 2] Fallback to STUN-only if TURN fails
+      return [{ urls: 'stun:stun.l.google.com:19302' }];
+    }
   }
 
-  // ── Cleanup — close peer and release all tracks ─────────────────────────────
-  const closePeer = useCallback(() => {
-    if (peerRef.current) {
-      peerRef.current.onicecandidate       = null;
-      peerRef.current.ontrack              = null;
-      peerRef.current.oniceconnectionstatechange = null;
-      peerRef.current.close();
-      peerRef.current = null;
-    }
+  // FIX: [Area 2] Comprehensive cleanup — close peer and release all tracks
+  const closePeer = useCallback((reason = 'unknown') => {
+    console.log('[WEBRTC] Cleanup triggered:', reason);
+
+    // 1. Stop all local tracks
     if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(t => t.stop());
+      localStreamRef.current.getTracks().forEach(track => {
+        track.stop();
+        console.log('[WEBRTC] Track stopped:', track.kind);
+      });
       localStreamRef.current = null;
     }
+
+    // 2. Remove remote audio
+    if (remoteAudioRef.current) {
+      remoteAudioRef.current.srcObject = null;
+      try { remoteAudioRef.current.pause(); } catch { /* may already be paused */ }
+    }
+
+    // 3. Close peer connection
+    if (peerRef.current) {
+      // Remove all listeners first
+      peerRef.current.ontrack = null;
+      peerRef.current.onicecandidate = null;
+      peerRef.current.onconnectionstatechange = null;
+      peerRef.current.oniceconnectionstatechange = null;
+      try { peerRef.current.close(); } catch { /* may already be closed */ }
+      peerRef.current = null;
+      console.log('[WEBRTC] Peer connection closed');
+    }
+
     iceQueueRef.current    = [];
     isRemoteSetRef.current = false;
     setRemoteStream(null);
+    setIsMuted(false);
   }, []);
 
   // ── Create RTCPeerConnection ────────────────────────────────────────────────
   async function createPeer() {
     // Guard: close any dangling peer from previous session
-    closePeer();
+    closePeer('new_peer_guard');
 
     const iceServers = await fetchIceServers();
     const peer = new RTCPeerConnection({ iceServers });
@@ -70,11 +97,44 @@ export function useWebRTC(socket, token) {
       setCallStatus('connected');
     };
 
+    // FIX: [Area 2] Connection state monitoring — catch ALL failure states
+    peer.onconnectionstatechange = () => {
+      const state = peer.connectionState;
+      console.log('[WEBRTC] Connection state:', state);
+
+      if (state === 'connected') {
+        setCallStatus('connected');
+      }
+
+      if (state === 'failed' || state === 'closed') {
+        console.warn('[WEBRTC] Connection failed/closed:', state);
+        socket.emit('call_end', { reason: 'connection_' + state });
+        closePeer('connection_state_' + state);
+        setCallStatus('ended');
+      }
+    };
+
+    // FIX: [Area 2] ICE connection monitoring with reconnection grace period
     peer.oniceconnectionstatechange = () => {
       const state = peer.iceConnectionState;
-      if (state === 'disconnected' || state === 'failed' || state === 'closed') {
-        socket.emit('call_end', { reason: 'user_ended' });
-        closePeer();
+      console.log('[WEBRTC] ICE state:', state);
+
+      if (state === 'disconnected') {
+        // Give 5 seconds for reconnection before cleanup
+        setTimeout(() => {
+          if (peerRef.current?.iceConnectionState === 'disconnected') {
+            console.warn('[WEBRTC] ICE disconnected timeout');
+            socket.emit('call_end', { reason: 'ice_disconnected' });
+            closePeer('ice_disconnected');
+            setCallStatus('ended');
+          }
+        }, 5000);
+      }
+
+      if (state === 'failed') {
+        console.warn('[WEBRTC] ICE failed');
+        socket.emit('call_end', { reason: 'ice_failed' });
+        closePeer('ice_failed');
         setCallStatus('ended');
       }
     };
@@ -137,6 +197,7 @@ export function useWebRTC(socket, token) {
       socket.emit('webrtc_offer', { offer });
     } catch (err) {
       console.error(`[WebRTC] startCall error: ${err.message}`);
+      closePeer('start_call_error');
       setCallStatus('ended');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -159,6 +220,7 @@ export function useWebRTC(socket, token) {
       socket.emit('webrtc_answer', { answer });
     } catch (err) {
       console.error(`[WebRTC] answerCall error: ${err.message}`);
+      closePeer('answer_call_error');
       setCallStatus('ended');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -203,13 +265,16 @@ export function useWebRTC(socket, token) {
   // ── End call (user-initiated) ───────────────────────────────────────────────
   const endCall = useCallback(() => {
     socket.emit('call_end', { reason: 'user_ended' });
-    closePeer();
+    closePeer('user_ended');
     setCallStatus('ended');
   }, [socket, closePeer]);
 
-  // ── Cleanup on unmount ──────────────────────────────────────────────────────
+  // FIX: [Area 2] Cleanup on component unmount
   useEffect(() => {
-    return () => { closePeer(); };
+    return () => {
+      console.log('[WEBRTC] Component unmount cleanup');
+      closePeer('unmount');
+    };
   }, [closePeer]);
 
   return {
@@ -223,5 +288,6 @@ export function useWebRTC(socket, token) {
     handleRemoteAnswer,
     toggleMute,
     endCall,
+    closePeer,  // FIX: [Area 2] Expose closePeer for external cleanup
   };
 }

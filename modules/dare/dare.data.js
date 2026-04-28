@@ -1,88 +1,715 @@
 'use strict';
 
-// NEW: [Feature 3 — Dare Mode Data]
+// FIX: [Area 3] Complete Tamil/Thanglish dare data — 80 dares across 9 categories
 
 const DARES = [
-  // VOICE (15 dares)
-  { id: 1,  text: "Speak only in questions for the next minute!", category: "voice", duration: 60 },
-  { id: 2,  text: "Talk like a news anchor reading breaking news", category: "voice", duration: 60 },
-  { id: 3,  text: "Narrate everything you're doing like a nature documentary", category: "voice", duration: 60 },
-  { id: 4,  text: "Speak as slowly as humanly possible", category: "voice", duration: 45 },
-  { id: 5,  text: "Talk like a robot for 60 seconds", category: "voice", duration: 60 },
-  { id: 6,  text: "Speak like you're reading a bedtime story to a child", category: "voice", duration: 45 },
-  { id: 7,  text: "Do your best impression of a sports commentator", category: "voice", duration: 45 },
-  { id: 8,  text: "Speak using only one-syllable words", category: "voice", duration: 45 },
-  { id: 9,  text: "Talk like you're explaining something to an alien", category: "voice", duration: 45 },
-  { id: 10, text: "Whisper everything you say for the next minute", category: "voice", duration: 60 },
-  { id: 11, text: "Speak as fast as you possibly can", category: "voice", duration: 30 },
-  { id: 12, text: "Talk like a pirate for 60 seconds", category: "voice", duration: 60 },
-  { id: 13, text: "Use a different accent for 60 seconds", category: "voice", duration: 60 },
-  { id: 14, text: "Speak like you're giving a TED talk", category: "voice", duration: 45 },
-  { id: 15, text: "Add 'and that's a fact' after every sentence", category: "voice", duration: 60 },
 
-  // CHALLENGE (15 dares)
-  { id: 16, text: "Name 10 animals in 10 seconds!", category: "challenge", duration: 20 },
-  { id: 17, text: "Say the alphabet backwards as fast as you can", category: "challenge", duration: 30 },
-  { id: 18, text: "Count backward from 30 without stopping", category: "challenge", duration: 35 },
-  { id: 19, text: "Name 5 movies that start with the letter S", category: "challenge", duration: 20 },
-  { id: 20, text: "Say 3 things you can see, 2 you can hear, 1 you can smell", category: "challenge", duration: 30 },
-  { id: 21, text: "Name a country for every letter of the alphabet (skip X, Z)", category: "challenge", duration: 60 },
-  { id: 22, text: "List 7 fruits in 5 seconds", category: "challenge", duration: 10 },
-  { id: 23, text: "Name 5 things in your room without looking", category: "challenge", duration: 15 },
-  { id: 24, text: "Describe your personality in exactly 3 words", category: "challenge", duration: 20 },
-  { id: 25, text: "Name 10 foods you love in 10 seconds", category: "challenge", duration: 15 },
-  { id: 26, text: "Spell your full name backwards out loud", category: "challenge", duration: 20 },
-  { id: 27, text: "Name 5 TV shows, 5 movies, and 5 songs in 30 seconds", category: "challenge", duration: 35 },
-  { id: 28, text: "List every country you've been to or want to visit in 20 seconds", category: "challenge", duration: 25 },
-  { id: 29, text: "Say 5 things that make you happy right now", category: "challenge", duration: 20 },
-  { id: 30, text: "Name 3 things that happened today in 10 seconds", category: "challenge", duration: 15 },
+  // ============================================
+  // CATEGORY: 🎵 MUSIC DIRECTORS
+  // ============================================
+  {
+    id: 1,
+    text: "ARR oda favourite song oru line paadunga! (Wrong notes ok, confidence matters 😂)",
+    category: "music",
+    icon: "🎵",
+    duration: 45,
+    hint: "Rehman sir approve pannuvaar!"
+  },
+  {
+    id: 2,
+    text: "Yuvan oda style la oru sad song create pannunga — 'Neeye en kaadhal, neeye en aayul...' type!",
+    category: "music",
+    icon: "🎵",
+    duration: 45,
+    hint: "Yuvan era begin!"
+  },
+  {
+    id: 3,
+    text: "Anirudh oda kuthu song mathiri 'Enjoy Enjaami' style la oru beat rap pannunga!",
+    category: "music",
+    icon: "🎵",
+    duration: 40,
+    hint: "Dhee dhee dhee!"
+  },
+  {
+    id: 4,
+    text: "Harris Jayaraj oda melody mathiri — eyes close panni 30 seconds hum pannunga!",
+    category: "music",
+    icon: "🎵",
+    duration: 35,
+    hint: "Jasmine flower..."
+  },
+  {
+    id: 5,
+    text: "Vijay Antony oda style la your name la oru song title create pannunga!",
+    category: "music",
+    icon: "🎵",
+    duration: 30,
+    hint: "Naan... [your name]!"
+  },
+  {
+    id: 6,
+    text: "D. Imman oda devotional style la 'VoiceMatch is the best app' nu paadunga!",
+    category: "music",
+    icon: "🎵",
+    duration: 40,
+    hint: "Endrume pugazh!"
+  },
+  {
+    id: 7,
+    text: "Ilaiyaraaja sir oda classic 80s melody style la oru dialogue paadunga!",
+    category: "music",
+    icon: "🎵",
+    duration: 45,
+    hint: "Isaignani vibes!"
+  },
+  {
+    id: 8,
+    text: "GV Prakash oda college anthem style la today's plans paadunga!",
+    category: "music",
+    icon: "🎵",
+    duration: 40,
+    hint: "College rock vibes!"
+  },
+  {
+    id: 9,
+    text: "Sid Sriram voice attempt pannunga — any melody, but with full emotion!",
+    category: "music",
+    icon: "🎵",
+    duration: 45,
+    hint: "Kannaana Kanney style!"
+  },
+  {
+    id: 10,
+    text: "Two different music directors — ARR vs Yuvan — oru line each sing pannunga!",
+    category: "music",
+    icon: "🎵",
+    duration: 50,
+    hint: "Epic battle begins!"
+  },
 
-  // FUNNY (15 dares)
-  { id: 31, text: "Tell the worst joke you know right now", category: "funny", duration: 45 },
-  { id: 32, text: "Make up a fake product and advertise it", category: "funny", duration: 45 },
-  { id: 33, text: "Do your best villain laugh", category: "funny", duration: 20 },
-  { id: 34, text: "Explain your job as if talking to a 5-year-old", category: "funny", duration: 45 },
-  { id: 35, text: "Create a rap about your morning routine right now", category: "funny", duration: 45 },
-  { id: 36, text: "Give a dramatic 30-second speech about your favorite food", category: "funny", duration: 35 },
-  { id: 37, text: "Pretend you just won an Oscar — give your acceptance speech", category: "funny", duration: 45 },
-  { id: 38, text: "Describe a potato as if it's the most beautiful thing in the world", category: "funny", duration: 30 },
-  { id: 39, text: "Make up a ridiculous conspiracy theory right now", category: "funny", duration: 45 },
-  { id: 40, text: "Pretend you're selling the other person something in the room", category: "funny", duration: 40 },
-  { id: 41, text: "Speak as if everything is the most shocking thing ever", category: "funny", duration: 45 },
-  { id: 42, text: "Pretend you're a famous chef describing a plain piece of bread", category: "funny", duration: 35 },
-  { id: 43, text: "Do your best impression of a person waking up late for work", category: "funny", duration: 30 },
-  { id: 44, text: "Make animal sounds for 15 seconds and explain why", category: "funny", duration: 25 },
-  { id: 45, text: "Describe your day as if it was a movie trailer", category: "funny", duration: 40 },
+  // ============================================
+  // CATEGORY: 🎬 MOVIES
+  // ============================================
+  {
+    id: 11,
+    text: "Vijay sir oda 'Mersal' dialogue 'Inaiku naan doctor' — full emotion la sollunga!",
+    category: "movies",
+    icon: "🎬",
+    duration: 30,
+    hint: "Thalapathy mode on!"
+  },
+  {
+    id: 12,
+    text: "Rajinikanth style la oru coin toss pannunga — neenga illamal just sound effects!",
+    category: "movies",
+    icon: "🎬",
+    duration: 25,
+    hint: "Kabali style!"
+  },
+  {
+    id: 13,
+    text: "Vikram sir oda Kaithi character la — no words, only expressions describe pannunga!",
+    category: "movies",
+    icon: "🎬",
+    duration: 35,
+    hint: "Ghost oda intensity!"
+  },
+  {
+    id: 14,
+    text: "96 movie la Ram and Jaanu scene — oru character choose pannunga, dialogue sollunga!",
+    category: "movies",
+    icon: "🎬",
+    duration: 45,
+    hint: "Nostalgia hit aagum!"
+  },
+  {
+    id: 15,
+    text: "Suriya oda Jai Bhim la oru court argument scene dialogue improvise pannunga!",
+    category: "movies",
+    icon: "🎬",
+    duration: 45,
+    hint: "Justice for all!"
+  },
+  {
+    id: 16,
+    text: "Dhanush oda Asuran character la — oppressed anger feeling express pannunga, no violence!",
+    category: "movies",
+    icon: "🎬",
+    duration: 40,
+    hint: "Raw emotion time!"
+  },
+  {
+    id: 17,
+    text: "Karthik Subbaraj movie la hidden meaning explain pannunga — 'Iraivi' scene choice unggalukku!",
+    category: "movies",
+    icon: "🎬",
+    duration: 50,
+    hint: "Director's cut!"
+  },
+  {
+    id: 18,
+    text: "Soorarai Pottru la Maara character oda 'Naan oru naal' speech improvise pannunga!",
+    category: "movies",
+    icon: "🎬",
+    duration: 45,
+    hint: "Sky is not the limit!"
+  },
+  {
+    id: 19,
+    text: "Tamil movie villain la neenga — hero kikku solrating kudukkaama threats pannunga!",
+    category: "movies",
+    icon: "🎬",
+    duration: 40,
+    hint: "Best villain award!"
+  },
+  {
+    id: 20,
+    text: "Vinnaithaandi Varuvaayaa la Karthik oda 'Jessie' call scene improvise pannunga!",
+    category: "movies",
+    icon: "🎬",
+    duration: 45,
+    hint: "VTV feels incoming!"
+  },
 
-  // DEEP (10 dares)
-  { id: 46, text: "Share one thing you've never told a stranger before", category: "deep", duration: 60 },
-  { id: 47, text: "Describe your perfect day in 30 seconds", category: "deep", duration: 35 },
-  { id: 48, text: "What's one weird thing you genuinely believe in?", category: "deep", duration: 45 },
-  { id: 49, text: "Give life advice to your 10-year-old self", category: "deep", duration: 45 },
-  { id: 50, text: "Describe your biggest fear without naming it directly", category: "deep", duration: 45 },
-  { id: 51, text: "What's one thing you wish more people knew about you?", category: "deep", duration: 45 },
-  { id: 52, text: "Describe success in your own words — not society's", category: "deep", duration: 45 },
-  { id: 53, text: "What would you do with one completely free day?", category: "deep", duration: 40 },
-  { id: 54, text: "Say something kind that you've been meaning to say", category: "deep", duration: 30 },
-  { id: 55, text: "What's one goal you haven't told anyone about?", category: "deep", duration: 45 },
+  // ============================================
+  // CATEGORY: 🏏 CRICKET
+  // ============================================
+  {
+    id: 21,
+    text: "Dhoni's last over — ball by ball commentary pannunga, enna la enna score!",
+    category: "cricket",
+    icon: "🏏",
+    duration: 50,
+    hint: "Finish like a boss!"
+  },
+  {
+    id: 22,
+    text: "Virat Kohli celebration act pannunga — every six hit la different celebration!",
+    category: "cricket",
+    icon: "🏏",
+    duration: 35,
+    hint: "King Kohli energy!"
+  },
+  {
+    id: 23,
+    text: "IPL auction la neenga auctioneer — your own name bid pannunga, value sollunga!",
+    category: "cricket",
+    icon: "🏏",
+    duration: 40,
+    hint: "Sold for 20 crores!"
+  },
+  {
+    id: 24,
+    text: "Rohit Sharma la neenga — 'Hitman' style la pressure situation calm-a handle pannunga!",
+    category: "cricket",
+    icon: "🏏",
+    duration: 35,
+    hint: "Mumbai Indians captain!"
+  },
+  {
+    id: 25,
+    text: "India vs Pakistan match last over — 10 runs needed, ball by ball act pannunga!",
+    category: "cricket",
+    icon: "🏏",
+    duration: 50,
+    hint: "Heart attack match!"
+  },
+  {
+    id: 26,
+    text: "CSK fan or RCB fan — defend your team la 30 seconds speech pannunga!",
+    category: "cricket",
+    icon: "🏏",
+    duration: 35,
+    hint: "Yellove or RCBEE?"
+  },
+  {
+    id: 27,
+    text: "Ravindra Jadeja fielding — full slow motion describe pannunga the impossible catch!",
+    category: "cricket",
+    icon: "🏏",
+    duration: 40,
+    hint: "Sir Jadeja enters!"
+  },
+  {
+    id: 28,
+    text: "Cricket commentator la neenga — Ajay Jadeja style Tamil commentary pannunga!",
+    category: "cricket",
+    icon: "🏏",
+    duration: 45,
+    hint: "Enna koduma sir ithu!"
+  },
+  {
+    id: 29,
+    text: "World Cup 2011 final — Dhoni's winning six — as commentator express pannunga!",
+    category: "cricket",
+    icon: "🏏",
+    duration: 40,
+    hint: "India lift the cup!"
+  },
+  {
+    id: 30,
+    text: "Neenga team selector — India squad announce pannunga, reason sollunga each pick la!",
+    category: "cricket",
+    icon: "🏏",
+    duration: 50,
+    hint: "BCCI chairman vibes!"
+  },
 
-  // WILD (5 dares)
-  { id: 56, text: "Sing the first song that comes to your mind right now", category: "wild", duration: 45 },
-  { id: 57, text: "Do your best impression of your favorite animal", category: "wild", duration: 25 },
-  { id: 58, text: "Pretend you're being interviewed on national TV right now", category: "wild", duration: 45 },
-  { id: 59, text: "Describe a color without ever saying its name", category: "wild", duration: 30 },
-  { id: 60, text: "Speak only in movie quotes for 60 seconds", category: "wild", duration: 60 },
+  // ============================================
+  // CATEGORY: 🎌 ANIME
+  // ============================================
+  {
+    id: 31,
+    text: "Naruto oda 'I will become Hokage' speech — Tamil la translate pannunga!",
+    category: "anime",
+    icon: "🎌",
+    duration: 40,
+    hint: "Believe it da!"
+  },
+  {
+    id: 32,
+    text: "One Piece la Luffy oda crew motivate speech — neenga Luffy!",
+    category: "anime",
+    icon: "🎌",
+    duration: 40,
+    hint: "Pirate King aaguvom!"
+  },
+  {
+    id: 33,
+    text: "Attack on Titan la Eren's passion speech — Tamil dubbing style pannunga!",
+    category: "anime",
+    icon: "🎌",
+    duration: 45,
+    hint: "Fight for freedom!"
+  },
+  {
+    id: 34,
+    text: "Dragon Ball Z la Goku oda power up — 'aaaargh' sounds without stopping 15 seconds!",
+    category: "anime",
+    icon: "🎌",
+    duration: 20,
+    hint: "Super Saiyan time!"
+  },
+  {
+    id: 35,
+    text: "Death Note la Light Yagami la neenga — villain monologue pannunga!",
+    category: "anime",
+    icon: "🎌",
+    duration: 45,
+    hint: "I am justice!"
+  },
+  {
+    id: 36,
+    text: "Demon Slayer la Tanjiro's kindness — even to enemy express pannunga!",
+    category: "anime",
+    icon: "🎌",
+    duration: 35,
+    hint: "Water breathing vibes!"
+  },
+  {
+    id: 37,
+    text: "Jujutsu Kaisen la Gojo sensei oda 'Throughout Heaven and Earth' speech Tamil la!",
+    category: "anime",
+    icon: "🎌",
+    duration: 40,
+    hint: "Strongest sorcerer!"
+  },
+  {
+    id: 38,
+    text: "Favourite anime character explain pannunga — neenga them aagama, describe pannunga!",
+    category: "anime",
+    icon: "🎌",
+    duration: 45,
+    hint: "Weebu time!"
+  },
+  {
+    id: 39,
+    text: "Hunter x Hunter la Killua and Gon friendship — Tamil la describe pannunga!",
+    category: "anime",
+    icon: "🎌",
+    duration: 40,
+    hint: "Best friendship!"
+  },
+  {
+    id: 40,
+    text: "Sword Art Online la Kirito oda solo mode — neenga aana enna panuveenga sollunga!",
+    category: "anime",
+    icon: "🎌",
+    duration: 35,
+    hint: "Black swordsman!"
+  },
+
+  // ============================================
+  // CATEGORY: 📺 SERIES
+  // ============================================
+  {
+    id: 41,
+    text: "Breaking Bad la 'I am the one who knocks' — neenga Walter White!",
+    category: "series",
+    icon: "📺",
+    duration: 30,
+    hint: "Say my name!"
+  },
+  {
+    id: 42,
+    text: "Money Heist la Professor oda heist plan Tamil la explain pannunga!",
+    category: "series",
+    icon: "📺",
+    duration: 50,
+    hint: "Bella Ciao!"
+  },
+  {
+    id: 43,
+    text: "Squid Game la 456 la neenga — why you want to win explain pannunga!",
+    category: "series",
+    icon: "📺",
+    duration: 40,
+    hint: "Red light green light!"
+  },
+  {
+    id: 44,
+    text: "Game of Thrones la 'Winter is coming' — Tamil climate change la apply pannunga!",
+    category: "series",
+    icon: "📺",
+    duration: 35,
+    hint: "Stark words!"
+  },
+  {
+    id: 45,
+    text: "Panchayat series la Phulera village problems Tamil la translate pannunga!",
+    category: "series",
+    icon: "📺",
+    duration: 45,
+    hint: "Village life vibes!"
+  },
+  {
+    id: 46,
+    text: "Mirzapur la Kaleen bhaiya la neenga — anyone who disagrees kku response pannunga!",
+    category: "series",
+    icon: "📺",
+    duration: 35,
+    hint: "UP vibes!"
+  },
+  {
+    id: 47,
+    text: "Scam 1992 la Harshad Mehta oda confidence — neenga aana pitch pannunga!",
+    category: "series",
+    icon: "📺",
+    duration: 45,
+    hint: "Big bull energy!"
+  },
+  {
+    id: 48,
+    text: "The Office la Michael Scott la neenga — terrible motivational speech pannunga!",
+    category: "series",
+    icon: "📺",
+    duration: 40,
+    hint: "Dundler Mifflin!"
+  },
+  {
+    id: 49,
+    text: "Dark series la time travel explain pannunga — Tamil la simply!",
+    category: "series",
+    icon: "📺",
+    duration: 50,
+    hint: "Knoten vibes!"
+  },
+  {
+    id: 50,
+    text: "Friends la 'How you doin?' — Tamil slang la translate pannunga, use it!",
+    category: "series",
+    icon: "📺",
+    duration: 25,
+    hint: "Joey style!"
+  },
+
+  // ============================================
+  // CATEGORY: 😄 THANGLISH FUNNY
+  // ============================================
+  {
+    id: 51,
+    text: "Auto uncle la neenga — customer bargain pannapo neenga how react pannuveenga!",
+    category: "funny",
+    icon: "😄",
+    duration: 40,
+    hint: "Meter podama pogalaam!"
+  },
+  {
+    id: 52,
+    text: "Amma kitta phone charge full aagala nu lie sollunga — convince pannunga!",
+    category: "funny",
+    icon: "😄",
+    duration: 35,
+    hint: "Excuse master!"
+  },
+  {
+    id: 53,
+    text: "Bus la window seat kedaikala — express your frustration without bad words!",
+    category: "funny",
+    icon: "😄",
+    duration: 30,
+    hint: "Window seat life!"
+  },
+  {
+    id: 54,
+    text: "Chennai summer la AC illama train journey — describe your experience!",
+    category: "funny",
+    icon: "😄",
+    duration: 40,
+    hint: "47 degree vibes!"
+  },
+  {
+    id: 55,
+    text: "Boss kitta salary hike kekkareenga — roleplay pannunga!",
+    category: "funny",
+    icon: "😄",
+    duration: 45,
+    hint: "Courage time!"
+  },
+  {
+    id: 56,
+    text: "Thenga biscuit mathiri oru boring thing la 30 seconds exciting-a describe pannunga!",
+    category: "funny",
+    icon: "😄",
+    duration: 35,
+    hint: "Marketing skills!"
+  },
+  {
+    id: 57,
+    text: "Tamil meme la neenga — 'Enna kodumai sir ithu' situation create pannunga!",
+    category: "funny",
+    icon: "😄",
+    duration: 40,
+    hint: "Meme lord!"
+  },
+  {
+    id: 58,
+    text: "Your worst traffic experience Chennai la — 30 seconds describe pannunga!",
+    category: "funny",
+    icon: "😄",
+    duration: 35,
+    hint: "Potholes and all!"
+  },
+  {
+    id: 59,
+    text: "Saravana stores sale la neenga — customer-a or salesman-a? Role pannunga!",
+    category: "funny",
+    icon: "😄",
+    duration: 40,
+    hint: "Offer ponga!"
+  },
+  {
+    id: 60,
+    text: "Filter coffee vs instant coffee — defend your choice la 30 seconds!",
+    category: "funny",
+    icon: "😄",
+    duration: 35,
+    hint: "Coffee wars!"
+  },
+
+  // ============================================
+  // CATEGORY: 💭 DEEP (Tamil style)
+  // ============================================
+  {
+    id: 61,
+    text: "Unnoda life la oru turning point — friend-ku solvamaari sollunga!",
+    category: "deep",
+    icon: "💭",
+    duration: 60,
+    hint: "Real talk time!"
+  },
+  {
+    id: 62,
+    text: "Neenga school la dream-a think panna — ippo enna aageenga? Compare pannunga!",
+    category: "deep",
+    icon: "💭",
+    duration: 50,
+    hint: "Life happened!"
+  },
+  {
+    id: 63,
+    text: "Un life la oru regret — lesson aaa convert pannunga, sollunga!",
+    category: "deep",
+    icon: "💭",
+    duration: 50,
+    hint: "Growth mindset!"
+  },
+  {
+    id: 64,
+    text: "Kaalathu kaalathu endrum kadamai — what's YOUR duty in life? Sollunga!",
+    category: "deep",
+    icon: "💭",
+    duration: 45,
+    hint: "Purpose driven!"
+  },
+  {
+    id: 65,
+    text: "Neenga 80 years-la neenga aana — current self-ku enna advice solluveeenga?",
+    category: "deep",
+    icon: "💭",
+    duration: 50,
+    hint: "Wise elder vibes!"
+  },
+  {
+    id: 66,
+    text: "Life-la oru superpower irundha — enna choose pannuveenga, why?",
+    category: "deep",
+    icon: "💭",
+    duration: 40,
+    hint: "Be honest!"
+  },
+  {
+    id: 67,
+    text: "Yaarum illatha one hour kedaichaa — exact-a enna panuveenga sollunga!",
+    category: "deep",
+    icon: "💭",
+    duration: 40,
+    hint: "True self reveal!"
+  },
+  {
+    id: 68,
+    text: "Un life-la oru person — without them neenga different-a irundhuveeenga. Sollunga!",
+    category: "deep",
+    icon: "💭",
+    duration: 50,
+    hint: "Impact matters!"
+  },
+
+  // ============================================
+  // CATEGORY: 🎯 CHALLENGES
+  // ============================================
+  {
+    id: 69,
+    text: "Tamil movie name la letter A dha start aaganum — 60 seconds la many as possible!",
+    category: "challenge",
+    icon: "🎯",
+    duration: 65,
+    hint: "Adhagappattathu?"
+  },
+  {
+    id: 70,
+    text: "ARR songs 10 title 15 seconds la sollunga — correct-a!",
+    category: "challenge",
+    icon: "🎯",
+    duration: 20,
+    hint: "Speed round!"
+  },
+  {
+    id: 71,
+    text: "IPL teams all 10 — jersey color describe pannunga without name sollaama!",
+    category: "challenge",
+    icon: "🎯",
+    duration: 45,
+    hint: "Cricket quiz!"
+  },
+  {
+    id: 72,
+    text: "Vijay movies title — 20 sollunga 30 seconds la — ONLY titles!",
+    category: "challenge",
+    icon: "🎯",
+    duration: 35,
+    hint: "Thalapathy fan test!"
+  },
+  {
+    id: 73,
+    text: "Anime character names 15 — 20 seconds la sollunga!",
+    category: "challenge",
+    icon: "🎯",
+    duration: 25,
+    hint: "Weeb speed test!"
+  },
+  {
+    id: 74,
+    text: "Tamil foods 20 — desserts only — 30 seconds la!",
+    category: "challenge",
+    icon: "🎯",
+    duration: 35,
+    hint: "Sweet tooth test!"
+  },
+  {
+    id: 75,
+    text: "Countries starting with 'I' — 60 seconds la how many?",
+    category: "challenge",
+    icon: "🎯",
+    duration: 65,
+    hint: "Geography master!"
+  },
+  {
+    id: 76,
+    text: "Tamil Nadu districts 20 — 45 seconds la!",
+    category: "challenge",
+    icon: "🎯",
+    duration: 50,
+    hint: "Local knowledge test!"
+  },
+  {
+    id: 77,
+    text: "Indian cricketers who scored 100+ ODI centuries — list pannunga!",
+    category: "challenge",
+    icon: "🎯",
+    duration: 45,
+    hint: "Cricket stats test!"
+  },
+
+  // ============================================
+  // CATEGORY: 🌟 WILDCARD
+  // ============================================
+  {
+    id: 78,
+    text: "Konjam neram 'Enthiran' Chitti robot la neenga — act pannunga!",
+    category: "wild",
+    icon: "🌟",
+    duration: 40,
+    hint: "Rajini + Robot!"
+  },
+  {
+    id: 79,
+    text: "Oru Tamil wedding MC la neenga — announce pannunga this VoiceMatch call!",
+    category: "wild",
+    icon: "🌟",
+    duration: 45,
+    hint: "Kalyanam ah!"
+  },
+  {
+    id: 80,
+    text: "SunTV serial villain la neenga — evil laugh + monologue pannunga!",
+    category: "wild",
+    icon: "🌟",
+    duration: 40,
+    hint: "Mega serial vibes!"
+  }
 ];
 
-function getRandomDare(usedIds = []) {
-  const available = DARES.filter(d => !usedIds.includes(d.id));
-  if (available.length === 0) {
-    // All used — reset with just last 5 excluded
-    const last5 = usedIds.slice(-5);
-    const reset = DARES.filter(d => !last5.includes(d.id));
-    return reset[Math.floor(Math.random() * reset.length)];
+// FIX: [Area 3] Category metadata with colors
+const CATEGORY_INFO = {
+  music:     { label: '🎵 Music Directors', color: '#7C3AED' },
+  movies:    { label: '🎬 Movies',          color: '#EF4444' },
+  cricket:   { label: '🏏 Cricket',         color: '#10B981' },
+  anime:     { label: '🎌 Anime',           color: '#F59E0B' },
+  series:    { label: '📺 Series',          color: '#3B82F6' },
+  funny:     { label: '😄 Thanglish Funny', color: '#EC4899' },
+  deep:      { label: '💭 Deep Talk',       color: '#6366F1' },
+  challenge: { label: '🎯 Challenge',       color: '#F97316' },
+  wild:      { label: '🌟 Wildcard',        color: '#14B8A6' }
+};
+
+// FIX: [Area 3] Updated getRandomDare with category preference
+function getRandomDare(usedIds = [], preferredCategory = null) {
+  let pool = DARES.filter(d => !usedIds.includes(d.id));
+
+  if (pool.length === 0) {
+    // Reset — exclude only last 10
+    const recent = usedIds.slice(-10);
+    pool = DARES.filter(d => !recent.includes(d.id));
   }
-  return available[Math.floor(Math.random() * available.length)];
+
+  if (preferredCategory) {
+    const categoryPool = pool.filter(d => d.category === preferredCategory);
+    if (categoryPool.length > 0) pool = categoryPool;
+  }
+
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
-module.exports = { DARES, getRandomDare };
+module.exports = { DARES, CATEGORY_INFO, getRandomDare };

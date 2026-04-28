@@ -1,3 +1,5 @@
+/* FIX: [Area 1] CallScreen CSS — 2-row controls, z-index layers, mobile-first */
+
 .call-screen {
   min-height: 100dvh;
   background: var(--bg-primary);
@@ -6,7 +8,9 @@
   align-items: center;
   justify-content: center;
   position: relative;
+  overflow: hidden; /* FIX: [Area 1] no scroll */
   background-image: radial-gradient(ellipse at 50% 30%, rgba(124,58,237,0.12) 0%, transparent 60%);
+  z-index: 1; /* FIX: [Area 1] Base call UI layer */
 }
 
 /* ── Connecting state ─────────────────────────────────────── */
@@ -56,10 +60,11 @@
   height: 100dvh;
   display: flex;
   flex-direction: column;
-  padding: max(var(--space-6), var(--safe-top)) var(--space-5) max(var(--space-6), var(--safe-bottom));
+  padding: max(var(--space-6), var(--safe-top)) var(--space-5) max(var(--space-5), var(--safe-bottom));
 }
 
-.call-header {
+/* FIX: [Area 1] Partner section — top */
+.call-partner-section {
   display: flex;
   align-items: center;
   gap: var(--space-4);
@@ -106,18 +111,64 @@
   transform-origin: center;
 }
 
-/* ── Controls ─────────────────────────────────────────────── */
-.call-controls {
+/* ══════════════════════════════════════════════════════════
+   FIX: [Area 1] Two-row controls layout
+   ══════════════════════════════════════════════════════════ */
+
+/* Row 1 — Main controls (always visible) */
+.call-main-controls {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-6);
+  gap: 16px;
+  padding: var(--space-3) 0;
+  z-index: 2;
 }
 
+/* Row 2 — Feature controls (collapsible on mobile) */
+.call-feature-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: var(--space-2) 0 var(--space-3);
+  z-index: 2;
+}
+
+/* FIX: [Area 1] Mobile: feature row hidden behind toggle */
+@media (max-width: 767px) {
+  .call-feature-row {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.3s ease, opacity 0.2s ease, padding 0.3s ease;
+    padding: 0;
+  }
+  .call-feature-row.show {
+    max-height: 120px;
+    opacity: 1;
+    padding: var(--space-2) 0 var(--space-3);
+  }
+}
+
+/* FIX: [Area 1] Desktop: show both rows always, hide toggle */
+@media (min-width: 768px) {
+  .call-feature-row {
+    max-height: none !important;
+    opacity: 1 !important;
+    padding: var(--space-2) 0 var(--space-3) !important;
+  }
+  .call-ctrl-more {
+    display: none !important;
+  }
+}
+
+/* ── Control buttons ──────────────────────────────────────── */
 .call-ctrl {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: var(--space-1);
   width: 64px;
   height: 64px;
@@ -128,6 +179,9 @@
   font-size: var(--text-xs);
   font-weight: 600;
   transition: all var(--fast) var(--ease);
+  position: relative;
+  padding-top: 0;
+  cursor: pointer;
 }
 
 .call-ctrl span {
@@ -137,12 +191,6 @@
   position: absolute;
   bottom: -18px;
   white-space: nowrap;
-}
-
-.call-ctrl {
-  position: relative;
-  padding-top: 0;
-  justify-content: center;
 }
 
 .call-ctrl:hover { background: var(--bg-elevated); transform: scale(1.05); }
@@ -167,6 +215,21 @@
   background: rgba(16,185,129,0.15);
   border-color: var(--success);
   color: var(--success);
+}
+
+/* More button styling */
+.call-ctrl-more {
+  background: var(--bg-tertiary) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+/* ── In-call report button positioning ────────────────────── */
+.incall-report-btn {
+  width: 64px !important;
+  height: 64px !important;
+  border-radius: 50% !important;
+  flex-direction: column !important;
+  padding: 0 !important;
 }
 
 /* ── Ended ────────────────────────────────────────────────── */
@@ -197,3 +260,12 @@
   gap: var(--space-3);
   width: 100%;
 }
+
+/* ══════════════════════════════════════════════════════════
+   FIX: [Area 1] Z-index layers for overlays
+   ══════════════════════════════════════════════════════════ */
+
+/* Music panel: z-index 10 */
+/* Report sheet: z-index 20 (handled in InCallReport.jsx) */
+/* Dare overlay: z-index 30 (handled in DareMode.jsx) */
+/* Incoming call: z-index 50 (handled in IncomingCallModal) */

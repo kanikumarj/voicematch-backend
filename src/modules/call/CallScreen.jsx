@@ -1,3 +1,5 @@
+// FIX: [Area 1] CallScreen — complete redesign with 2-row controls layout
+
 import { useEffect, useRef, useState } from 'react';
 import { useWebRTC } from './useWebRTC';
 import Avatar from '../../components/ui/Avatar';
@@ -19,6 +21,10 @@ export default function CallScreen({ socket, token, partnerName, isInitiator, pa
   const [incomingReq, setIncomingReq] = useState(null);
   // NEW: [Feature 1] In-call report state
   const [hasReported, setHasReported] = useState(false);
+  // FIX: [Area 1] Mobile toggle for feature row
+  const [showFeatures, setShowFeatures] = useState(false);
+  // FIX: [Area 2] Partner left state
+  const [localCallStatus, setLocalCallStatus] = useState(null);
   
   const [showRating, setShowRating] = useState(false);
   const [callEndedReason, setCallEndedReason] = useState(null);
@@ -27,7 +33,7 @@ export default function CallScreen({ socket, token, partnerName, isInitiator, pa
   const {
     callStatus, isMuted, remoteAudioRef,
     startCall, answerCall, handleRemoteIce, handleRemoteAnswer,
-    toggleMute, endCall,
+    toggleMute, endCall, closePeer,
   } = useWebRTC(socket, token);
 
   const { seconds, formatted } = useCallTimer(callStatus === 'connected');
@@ -43,17 +49,53 @@ export default function CallScreen({ socket, token, partnerName, isInitiator, pa
     }
   };
 
+  // FIX: [Area 2] Handle ALL partner_disconnected scenarios
   useEffect(() => {
-    socket.on('webrtc_offer',         async ({ offer })     => await answerCall(offer));
-    socket.on('webrtc_answer',        async ({ answer })    => await handleRemoteAnswer(answer));
-    socket.on('webrtc_ice_candidate', async ({ candidate }) => await handleRemoteIce(candidate));
-    socket.on('partner_disconnected', ({ reason }) => { interceptEnd(reason); });
-    socket.on('call_ended',           () => { interceptEnd('user_ended'); });
+    if (!socket) return;
+
+    const handlePartnerDisconnected = ({ reason }) => {
+      console.log('[CALL] Partner disconnected:', reason);
+      closePeer('partner_disconnected');
+      setLocalCallStatus('partner_left');
+      
+      // Auto-navigate after 3 seconds
+      setTimeout(() => {
+        onCallEnd(reason || 'partner_left');
+      }, 3000);
+    };
+
+    const handleForceEnd = ({ reason }) => {
+      console.log('[CALL] Force end:', reason);
+      closePeer('force_end');
+      onCallEnd(reason || 'force_ended');
+    };
+
+    socket.on('partner_disconnected', handlePartnerDisconnected);
+    socket.on('call_force_ended', handleForceEnd);
+
+    return () => {
+      socket.off('partner_disconnected', handlePartnerDisconnected);
+      socket.off('call_force_ended', handleForceEnd);
+    };
+  }, [socket, closePeer, onCallEnd]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const onOffer = async ({ offer }) => await answerCall(offer);
+    const onAnswer = async ({ answer }) => await handleRemoteAnswer(answer);
+    const onIce = async ({ candidate }) => await handleRemoteIce(candidate);
+    const onCallEnded = () => { interceptEnd('user_ended'); };
 
     const onReqReceived   = ({ requestId, fromUser }) => setIncomingReq({ requestId, fromUser });
     const onReqSent       = () => setFriendState('sent');
     const onFriendCreated = () => { setFriendState('friends'); setIncomingReq(null); };
     const onReqRejected   = () => setFriendState('idle');
+
+    socket.on('webrtc_offer', onOffer);
+    socket.on('webrtc_answer', onAnswer);
+    socket.on('webrtc_ice_candidate', onIce);
+    socket.on('call_ended', onCallEnded);
 
     socket.on('friend_request_received',     onReqReceived);
     socket.on('friend_request_sent_confirm', onReqSent);
@@ -62,11 +104,10 @@ export default function CallScreen({ socket, token, partnerName, isInitiator, pa
     socket.on('already_friends',             onFriendCreated);
 
     return () => {
-      socket.off('webrtc_offer');
-      socket.off('webrtc_answer');
-      socket.off('webrtc_ice_candidate');
-      socket.off('partner_disconnected');
-      socket.off('call_ended');
+      socket.off('webrtc_offer', onOffer);
+      socket.off('webrtc_answer', onAnswer);
+      socket.off('webrtc_ice_candidate', onIce);
+      socket.off('call_ended', onCallEnded);
       socket.off('friend_request_received',     onReqReceived);
       socket.off('friend_request_sent_confirm', onReqSent);
       socket.off('friendship_created',          onFriendCreated);
@@ -118,8 +159,33 @@ export default function CallScreen({ socket, token, partnerName, isInitiator, pa
     if (action === 'reject') setIncomingReq(null);
   }
 
+  // FIX: [Area 2] Partner left UI state
+  if (localCallStatus === 'partner_left') {
+    return (
+      <div className="call-screen" style={{ justifyContent: 'center', gap: '16px' }}>
+        <audio ref={remoteAudioRef} autoPlay playsInline aria-hidden="true" />
+        <div style={{ fontSize: '48px', marginBottom: '8px' }}>👋</div>
+        <h2 style={{ color: 'var(--text-primary)', fontSize: '20px', fontWeight: 700 }}>
+          Partner disconnected
+        </h2>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+          Finding your next match...
+        </p>
+        <div className="call-spinner-ring" style={{ 
+          width: '32px', height: '32px', 
+          border: '3px solid transparent', 
+          borderTopColor: 'var(--accent-primary)',
+          borderRadius: '50%',
+          animation: 'spin-ring 1s linear infinite',
+          margin: '8px auto'
+        }} />
+      </div>
+    );
+  }
+
   return (
     <div className="call-screen" data-status={callStatus}>
+      {/* FIX: [Area 1] Hidden audio — always rendered, never covered by overlays */}
       <audio ref={remoteAudioRef} autoPlay playsInline aria-hidden="true" />
 
       {/* ── Connecting ── */}
@@ -137,30 +203,19 @@ export default function CallScreen({ socket, token, partnerName, isInitiator, pa
       {/* ── Connected ── */}
       {callStatus === 'connected' && (
         <div className="call-state-connected">
-          {/* Header */}
-          <div className="call-header">
+          {/* FIX: [Area 1] Partner info — top section */}
+          <div className="call-partner-section">
             <Avatar name={partnerName} size="lg" status="in_call" />
             <div className="call-header-info">
               <h2 className="call-partner-name">{partnerName}</h2>
-              <span className="call-duration-badge">In call • {formatted}</span>
+              <span className="call-duration-badge">🔴 {formatted}</span>
               {onlineStats.voice > 0 && (
                 <span className="call-pool-stat">🟢 {onlineStats.voice} in voice pool</span>
               )}
             </div>
           </div>
 
-          {/* NEW: [Feature 1] In-call report button */}
-          {!hasReported && callStatus === 'connected' && (
-            <div style={{ position: 'absolute', top: '16px', right: '16px' }}>
-              <InCallReport
-                partner={{ id: partnerId, name: partnerName }}
-                sessionId={sessionId}
-                onReported={() => setHasReported(true)}
-              />
-            </div>
-          )}
-
-          {/* Audio visualizer */}
+          {/* FIX: [Area 1] Waveform bars — CSS animation */}
           <div className="call-visualizer">
             {Array.from({ length: 12 }, (_, i) => (
               <div
@@ -171,37 +226,8 @@ export default function CallScreen({ socket, token, partnerName, isInitiator, pa
             ))}
           </div>
 
-          {/* Controls */}
-          <div className="call-controls">
-            <button
-              className={`call-ctrl ${isMuted ? 'ctrl-active' : ''}`}
-              onClick={toggleMute}
-              aria-label={isMuted ? 'Unmute' : 'Mute'}
-              aria-pressed={isMuted}
-            >
-              {isMuted
-                ? <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-                : <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-              }
-              <span>{isMuted ? 'Unmute' : 'Mute'}</span>
-            </button>
-
-            <button
-              className={`call-ctrl ctrl-friend ${friendState !== 'idle' ? 'ctrl-sent' : ''}`}
-              onClick={sendFriendReq}
-              disabled={friendState !== 'idle'}
-              aria-label="Add friend"
-            >
-              {friendState === 'friends'
-                ? <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                : <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
-              }
-              <span>{friendState === 'idle' ? 'Add Friend' : friendState === 'sent' ? 'Sent ✓' : 'Friends ✓'}</span>
-            </button>
-
-            {/* NEW: [Feature 2] Music sync */}
-            <MusicSync socket={socket} isCallConnected={callStatus === 'connected'} />
-
+          {/* FIX: [Area 1] Feature controls — Row 2 (collapsible on mobile) */}
+          <div className={`call-feature-row ${showFeatures ? 'show' : ''}`}>
             {/* NEW: [Feature 3] Dare mode */}
             <DareMode
               socket={socket}
@@ -211,6 +237,54 @@ export default function CallScreen({ socket, token, partnerName, isInitiator, pa
               isCallConnected={callStatus === 'connected'}
             />
 
+            {/* NEW: [Feature 2] Music sync */}
+            <MusicSync
+              socket={socket}
+              isCallConnected={callStatus === 'connected'}
+              mode="call"
+              callAudioRef={remoteAudioRef}
+            />
+
+            {/* Friend request button */}
+            <button
+              className={`call-ctrl ctrl-friend ${friendState !== 'idle' ? 'ctrl-sent' : ''}`}
+              onClick={sendFriendReq}
+              disabled={friendState !== 'idle'}
+              aria-label="Add friend"
+            >
+              {friendState === 'friends'
+                ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                : <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+              }
+              <span>{friendState === 'idle' ? 'Add' : friendState === 'sent' ? 'Sent ✓' : 'Friends'}</span>
+            </button>
+          </div>
+
+          {/* FIX: [Area 1] Main controls — Row 1 — always visible */}
+          <div className="call-main-controls">
+            {/* Mobile toggle for feature row */}
+            <button
+              className="call-ctrl call-ctrl-more"
+              onClick={() => setShowFeatures(!showFeatures)}
+              aria-label="More features"
+            >
+              <span style={{ fontSize: '20px' }}>{showFeatures ? '✕' : '⋯'}</span>
+              <span>{showFeatures ? 'Less' : 'More'}</span>
+            </button>
+
+            <button
+              className={`call-ctrl ${isMuted ? 'ctrl-active' : ''}`}
+              onClick={toggleMute}
+              aria-label={isMuted ? 'Unmute' : 'Mute'}
+              aria-pressed={isMuted}
+            >
+              {isMuted
+                ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                : <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+              }
+              <span>{isMuted ? 'Unmute' : 'Mute'}</span>
+            </button>
+
             <button className="call-ctrl ctrl-end" onClick={handleEnd} aria-label="End call">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.41 2 2 0 0 1 3.6 1.24h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81a16 16 0 0 0 5.95 5.95l.87-.87a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
@@ -218,16 +292,25 @@ export default function CallScreen({ socket, token, partnerName, isInitiator, pa
               </svg>
               <span>End</span>
             </button>
+
+            {/* NEW: [Feature 1] In-call report */}
+            {!hasReported && (
+              <InCallReport
+                partner={{ id: partnerId, name: partnerName }}
+                sessionId={sessionId}
+                onReported={() => setHasReported(true)}
+              />
+            )}
           </div>
         </div>
       )}
 
       {/* ── Ended ── */}
-      {(callStatus === 'ended' || showRating) && (
-        <div className="call-state-ended" style={{ background: 'var(--bg)', position: 'absolute', inset: 0, zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      {(callStatus === 'ended' && !localCallStatus) && (
+        <div className="call-state-ended" style={{ background: 'var(--bg-primary)', position: 'absolute', inset: 0, zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
           {showRating ? (
-            <div style={{ background: 'var(--surface)', padding: 32, borderRadius: 16, width: '100%', maxWidth: 400, textAlign: 'center', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}>
-              <h2>Rate your call</h2>
+            <div style={{ background: 'var(--bg-elevated)', padding: 32, borderRadius: 16, width: '100%', maxWidth: 400, textAlign: 'center', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
+              <h2 style={{ color: 'var(--text-primary)' }}>Rate your call</h2>
               <p style={{ margin: '8px 0 24px', color: 'var(--text-muted)' }}>How was your conversation with {partnerName}?</p>
               
               <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginBottom: 32 }}>
