@@ -179,16 +179,26 @@ export default function MusicSync({
   const [searching, setSearching]       = useState(false);
   const [activeTab, setActiveTab]       = useState('search');
 
-  const playerRef   = useRef(null);
-  const isSyncing   = useRef(false);
-  const searchTimer = useRef(null);
-  const musicVolRef = useRef(50); // ref to avoid stale closure in YT callbacks
+  const playerRef      = useRef(null);
+  const isSyncing      = useRef(false);
+  const searchTimer    = useRef(null);
+  const musicVolRef    = useRef(50);
+  const pendingVideoRef = useRef(null); // queued videoId when YT not ready yet
 
-  // Keep ref in sync
+  // Keep vol ref in sync
   useEffect(() => { musicVolRef.current = musicVolume; }, [musicVolume]);
 
-  // ── Load YouTube IFrame API ──
+  // ── Load YouTube IFrame API eagerly on mount ──
   useEffect(() => {
+    const tryInit = () => {
+      setPlayerReady(true);
+      // If a video was queued while YT was loading, init it now
+      if (pendingVideoRef.current) {
+        const { videoId, autoplay } = pendingVideoRef.current;
+        pendingVideoRef.current = null;
+        setTimeout(() => initPlayerById(videoId, autoplay), 100);
+      }
+    };
     if (window.YT && window.YT.Player) { setPlayerReady(true); return; }
     if (!document.getElementById('yt-api-script')) {
       const tag = document.createElement('script');
@@ -196,18 +206,17 @@ export default function MusicSync({
       tag.src = 'https://www.youtube.com/iframe_api';
       document.head.appendChild(tag);
     }
-    // Support multiple MusicSync instances waiting for API
     const prev = window.onYouTubeIframeAPIReady;
-    window.onYouTubeIframeAPIReady = () => {
-      setPlayerReady(true);
-      if (typeof prev === 'function') prev();
-    };
-    return () => {};
-  }, []);
+    window.onYouTubeIframeAPIReady = () => { tryInit(); if (typeof prev === 'function') prev(); };
+  }, []);  // eslint-disable-line
 
-  // ── Init player ──
-  const initPlayer = useCallback((videoId, autoplay = true) => {
-    if (!window.YT || !window.YT.Player) return;
+  // ── Internal init player function (used by initPlayer and pending retry) ──
+  const initPlayerById = useCallback((videoId, autoplay = true) => {
+    if (!window.YT || !window.YT.Player) {
+      // YT not ready yet — queue it
+      pendingVideoRef.current = { videoId, autoplay };
+      return;
+    }
 
     if (playerRef.current) {
       try { playerRef.current.destroy(); } catch {}
@@ -221,7 +230,6 @@ export default function MusicSync({
       el.style.cssText = 'position:fixed;bottom:-9999px;left:-9999px;width:1px;height:1px;';
       document.body.appendChild(el);
     } else {
-      // Reset to plain div so YT can re-init
       el.innerHTML = '';
     }
 
@@ -231,6 +239,7 @@ export default function MusicSync({
         playerVars: { autoplay: 1, controls: 0, disablekb: 1, fs: 0, iv_load_policy: 3, modestbranding: 1, rel: 0, playsinline: 1 },
         events: {
           onReady: (e) => {
+            // Apply current volume immediately when player is ready
             e.target.setVolume(musicVolRef.current);
             if (autoplay) { e.target.playVideo(); setIsPlaying(true); }
           },
@@ -239,18 +248,18 @@ export default function MusicSync({
             if (!S) return;
             if (e.data === S.PLAYING)  setIsPlaying(true);
             if (e.data === S.PAUSED)   setIsPlaying(false);
-            if (e.data === S.ENDED) {
-              setIsPlaying(false);
-              setCurrentTrack(null);
-            }
+            if (e.data === S.ENDED)   { setIsPlaying(false); setCurrentTrack(null); }
           },
           onError: () => { setCurrentTrack(null); setIsPlaying(false); },
         },
       });
     } catch (err) {
-      console.warn('YT player init failed:', err);
+      console.warn('[MusicSync] YT player init error:', err);
     }
-  }, []); // stable — uses refs
+  }, []); // stable — uses refs only
+
+  // ── Public initPlayer (alias) ──
+  const initPlayer = initPlayerById;
 
   // ── Play track ──
   const playTrack = useCallback((track) => {

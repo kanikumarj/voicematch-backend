@@ -1,55 +1,67 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getSocket } from '../lib/socket';
-import api from '../lib/api';
 
 /**
- * useFriendStatus — Hook to track a friend's online status and last seen time.
- * Listens for live socket updates via friend_status_change, friend_online, friend_offline.
+ * useFriendStatus — real-time online/offline tracking.
+ * Fails silently if the status API doesn't exist.
  */
 export default function useFriendStatus(friendId) {
-  const [status, setStatus] = useState({ isOnline: false, lastSeen: null });
+  const [isOnline, setIsOnline] = useState(false);
+  const [lastSeen, setLastSeen] = useState(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
 
   useEffect(() => {
     if (!friendId) return;
 
-    // 1. Initial fetch
-    api.get(`/api/users/${friendId}/status`)
-      .then(res => setStatus(res.data))
-      .catch(() => {});
+    // Best-effort status fetch — ignore if endpoint missing
+    const controller = new AbortController();
+    fetch(`${import.meta.env.VITE_API_URL}/api/friends/status/${friendId}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('vm_token') || localStorage.getItem('token') || ''}` },
+      signal: controller.signal,
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (!mountedRef.current || !d) return;
+        setIsOnline(!!d.isOnline);
+        setLastSeen(d.lastSeen || null);
+      })
+      .catch(() => {}); // silently ignore 404 / network errors
 
-    // 2. Listen for live changes
+    // Real-time socket updates
     let socket;
     try { socket = getSocket(); } catch { return; }
     if (!socket) return;
 
-    const onStatusChange = ({ userId, isOnline, lastSeen }) => {
-      if (String(userId) === String(friendId)) {
-        setStatus({ isOnline, lastSeen });
+    const onStatusChange = ({ userId, isOnline: online, lastSeen: ls }) => {
+      if (String(userId) === String(friendId) && mountedRef.current) {
+        setIsOnline(!!online); setLastSeen(ls || null);
       }
     };
-
-    const onFriendOnline = ({ userId }) => {
-      if (String(userId) === String(friendId)) {
-        setStatus({ isOnline: true, lastSeen: new Date().toISOString() });
-      }
+    const onOnline = ({ userId }) => {
+      if (String(userId) === String(friendId) && mountedRef.current) setIsOnline(true);
     };
-
-    const onFriendOffline = ({ userId }) => {
-      if (String(userId) === String(friendId)) {
-        setStatus({ isOnline: false, lastSeen: new Date().toISOString() });
+    const onOffline = ({ userId }) => {
+      if (String(userId) === String(friendId) && mountedRef.current) {
+        setIsOnline(false); setLastSeen(new Date().toISOString());
       }
     };
 
     socket.on('friend_status_change', onStatusChange);
-    socket.on('friend_online', onFriendOnline);
-    socket.on('friend_offline', onFriendOffline);
+    socket.on('friend_online',        onOnline);
+    socket.on('friend_offline',       onOffline);
 
     return () => {
+      controller.abort();
       socket.off('friend_status_change', onStatusChange);
-      socket.off('friend_online', onFriendOnline);
-      socket.off('friend_offline', onFriendOffline);
+      socket.off('friend_online',        onOnline);
+      socket.off('friend_offline',       onOffline);
     };
   }, [friendId]);
 
-  return status;
+  return { isOnline, lastSeen };
 }
