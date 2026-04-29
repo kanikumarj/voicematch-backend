@@ -26,6 +26,8 @@ import SecretAdminRoute from './routes/AdminRoute';
 import NotFoundPage   from './pages/NotFoundPage';
 // NEW: [Feature 4] Public profile
 import PublicProfilePage from './pages/profile/PublicProfilePage';
+// Google OAuth callback
+import GoogleCallbackPage from './pages/auth/GoogleCallbackPage';
 
 function AdminRoute({ children }) {
   const { user } = useAuth();
@@ -55,6 +57,9 @@ export default function App() {
                 <Route path="/verify-email"    element={<VerifyEmail />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password"  element={<ResetPassword />} />
+
+                {/* Google OAuth callback — receives token from backend */}
+                <Route path="/auth/callback" element={<GoogleCallbackPage />} />
 
                 {/* NEW: [Feature 4] Public profile — no auth */}
                 <Route path="/u/:username" element={<PublicProfilePage />} />
