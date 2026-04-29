@@ -1,3 +1,8 @@
+/* ═══════════════════════════════════════════════════════════════
+   DashboardPage — Apple Liquid Fluid Premium Design
+   Glassmorphism + Gradient Cards + Ambient Effects
+   ═══════════════════════════════════════════════════════════════ */
+
 .dash-content {
   padding: var(--space-4);
   display: flex;
@@ -8,22 +13,23 @@
   width: 100%;
 }
 
-/* ── Online Stats Bar ────────────────────────────────────── */
+/* ── Online Stats Bar — Glass pill ─────────────────────────── */
 .online-stats-bar {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-2) var(--space-4);
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-full);
+  padding: 8px 20px;
+  background: rgba(52,211,153,0.06);
+  border: 0.5px solid rgba(52,211,153,0.12);
+  border-radius: 100px;
+  backdrop-filter: blur(12px);
 }
 
 .online-stats-global {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: var(--text-sm);
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -32,8 +38,9 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--online-dot);
-  animation: pulse-glow 2s ease-in-out infinite;
+  background: #34D399;
+  box-shadow: 0 0 8px rgba(52,211,153,0.5);
+  animation: pulse-online-dot 2s ease-in-out infinite;
   flex-shrink: 0;
 }
 
@@ -41,15 +48,15 @@
   white-space: nowrap;
 }
 
-/* ── Mode Stats (below mode selector) ────────────────────── */
+/* ── Mode Stats ──────────────────────────────────────────── */
 .mode-stats {
-  font-size: var(--text-sm);
+  font-size: 13px;
   color: var(--text-secondary);
   margin-bottom: var(--space-5);
   text-align: center;
 }
 
-/* ── Greeting ─────────────────────────────────────────────── */
+/* ── Greeting ────────────────────────────────────────────── */
 .dash-greeting {
   display: flex;
   align-items: center;
@@ -57,22 +64,29 @@
 }
 
 .dash-hello {
-  font-size: var(--text-lg);
-  font-weight: 700;
+  font-size: 22px;
+  font-weight: 800;
   margin-bottom: 4px;
+  letter-spacing: -0.4px;
 }
 
 .dash-streak {
-  font-size: var(--text-sm);
+  font-size: 13px;
   color: var(--warning);
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(245,158,11,0.08);
+  padding: 3px 10px;
+  border-radius: 100px;
 }
 
-/* ── Connect Card ─────────────────────────────────────────── */
+/* ── Connect Card — Fluid gradient glass ─────────────────── */
 .dash-connect-card {
-  background: linear-gradient(135deg, #1a0a3a 0%, #0f0620 100%);
-  border: 1px solid rgba(124,58,237,0.2);
-  border-radius: var(--radius-xl);
+  background: linear-gradient(135deg, #120826 0%, #0D0518 50%, #0A0412 100%);
+  border: 0.5px solid rgba(124,58,237,0.15);
+  border-radius: 24px;
   padding: var(--space-8) var(--space-6);
   text-align: center;
   position: relative;
@@ -83,21 +97,45 @@
   justify-content: center;
 }
 
+/* Ambient glow inside the card */
+.dash-connect-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(124,58,237,0.12) 0%, transparent 70%);
+  pointer-events: none;
+  animation: ambient-bg-shift 10s ease-in-out infinite alternate;
+}
+
+@keyframes ambient-bg-shift {
+  0% { opacity: 0.8; transform: translateX(-50%) scale(1); }
+  100% { opacity: 1; transform: translateX(-50%) scale(1.2); }
+}
+
 html.light .dash-connect-card {
-  background: linear-gradient(135deg, #f5f0ff 0%, #ede9fe 100%);
-  border-color: rgba(124,58,237,0.15);
+  background: linear-gradient(135deg, #f5f0ff 0%, #ede9fe 50%, #e5e0f8 100%);
+  border-color: rgba(124,58,237,0.1);
 }
 
 .dash-connect-card h3 {
-  font-size: var(--text-xl);
+  font-size: 22px;
+  font-weight: 700;
   margin-bottom: 8px;
   color: var(--text-primary);
+  position: relative;
+  z-index: 1;
 }
 
 .dash-connect-card p {
   color: var(--text-secondary);
-  font-size: var(--text-sm);
+  font-size: 13px;
   margin-bottom: var(--space-5);
+  position: relative;
+  z-index: 1;
 }
 
 .connect-idle, .connect-searching, .connect-matched {
@@ -106,6 +144,8 @@ html.light .dash-connect-card {
   align-items: center;
   gap: var(--space-3);
   width: 100%;
+  position: relative;
+  z-index: 1;
 }
 
 /* Mic icon */
@@ -124,7 +164,7 @@ html.light .dash-connect-card {
   animation: pulse-glow 3s ease-in-out infinite;
 }
 
-/* Radar rings */
+/* Radar rings — enhanced glow */
 .radar-wrap {
   position: relative;
   width: 120px;
@@ -140,19 +180,19 @@ html.light .dash-connect-card {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  border: 2px solid var(--accent-primary);
+  border: 2px solid rgba(124,58,237,0.4);
   opacity: 0;
-  animation: radar 2s ease-out infinite;
+  animation: radar 2.5s ease-out infinite;
 }
 
 .radar-core {
   font-size: 40px;
   z-index: 1;
-  animation: pulse-glow 2s ease-in-out infinite;
+  filter: drop-shadow(0 0 12px rgba(124,58,237,0.3));
 }
 
 .connect-timer {
-  font-size: var(--text-sm);
+  font-size: 13px;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
@@ -162,30 +202,43 @@ html.light .dash-connect-card {
   animation: scale-pop var(--slow) var(--spring);
 }
 
-/* ── Stats ────────────────────────────────────────────────── */
+/* ── Stats — Glass cards ─────────────────────────────────── */
 .dash-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-3);
+  gap: 10px;
 }
 
 .stat-card {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  padding: var(--space-4) var(--space-3);
+  background: rgba(255,255,255,0.03);
+  border: 0.5px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+  padding: 18px 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
   text-align: center;
+  backdrop-filter: blur(8px);
+  transition: all 0.25s ease;
 }
 
-.stat-icon  { font-size: 20px; }
-.stat-value { font-size: var(--text-xl); font-weight: 700; }
-.stat-label { font-size: var(--text-xs); color: var(--text-muted); font-weight: 500; }
+html.light .stat-card {
+  background: rgba(0,0,0,0.02);
+  border-color: rgba(0,0,0,0.06);
+}
 
-/* ── Section header ───────────────────────────────────────── */
+.stat-card:hover {
+  background: rgba(124,58,237,0.06);
+  border-color: rgba(124,58,237,0.12);
+  transform: translateY(-2px);
+}
+
+.stat-icon  { font-size: 22px; }
+.stat-value { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
+.stat-label { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* ── Section header ──────────────────────────────────────── */
 .dash-section {}
 
 .section-header {
@@ -196,17 +249,17 @@ html.light .dash-connect-card {
 }
 
 .section-header h4 {
-  font-size: var(--text-base);
+  font-size: 15px;
   font-weight: 700;
 }
 
 .section-more {
-  font-size: var(--text-sm);
+  font-size: 13px;
   color: var(--accent-primary);
   font-weight: 600;
 }
 
-/* ── Online friends row ───────────────────────────────────── */
+/* ── Online friends row ──────────────────────────────────── */
 .online-friends-row {
   display: flex;
   gap: var(--space-4);
@@ -223,10 +276,14 @@ html.light .dash-connect-card {
   gap: var(--space-1);
   flex-shrink: 0;
   background: none;
+  cursor: pointer;
+  transition: transform 0.2s ease;
 }
 
+.online-friend:hover { transform: scale(1.06); }
+
 .online-friend-name {
-  font-size: var(--text-xs);
+  font-size: 11px;
   color: var(--text-secondary);
   font-weight: 500;
   max-width: 48px;
@@ -235,32 +292,36 @@ html.light .dash-connect-card {
   white-space: nowrap;
 }
 
-/* ── Pending requests card ────────────────────────────────── */
+/* ── Pending requests card ───────────────────────────────── */
 .pending-card {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-subtle);
+  background: rgba(124,58,237,0.04);
+  border: 0.5px solid rgba(124,58,237,0.1);
   border-left: 3px solid var(--accent-primary);
-  border-radius: var(--radius-lg);
+  border-radius: 16px;
   padding: var(--space-4);
   display: flex;
   align-items: center;
   gap: var(--space-3);
   cursor: pointer;
-  transition: background var(--fast) var(--ease);
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
 }
 
-.pending-card:hover { background: var(--bg-tertiary); }
+.pending-card:hover {
+  background: rgba(124,58,237,0.08);
+  transform: translateY(-1px);
+}
 
 .pending-icon { font-size: 24px; flex-shrink: 0; }
 
 .pending-card div {
   flex: 1;
-  font-size: var(--text-sm);
+  font-size: 14px;
 }
 
 .pending-card div p {
   color: var(--text-muted);
-  font-size: var(--text-xs);
+  font-size: 12px;
   margin-top: 2px;
 }
 
@@ -269,17 +330,18 @@ html.light .dash-connect-card {
   font-size: 22px;
 }
 
-/* ── Reconnecting bar ─────────────────────────────────────── */
+/* ── Reconnecting bar ────────────────────────────────────── */
 .reconnecting-bar {
-  background: var(--warning);
-  color: #000;
+  background: linear-gradient(90deg, rgba(245,158,11,0.15), rgba(245,158,11,0.08));
+  border-bottom: 0.5px solid rgba(245,158,11,0.2);
+  color: var(--warning);
   text-align: center;
-  font-size: var(--text-sm);
+  font-size: 13px;
   font-weight: 600;
   padding: var(--space-2);
 }
 
-/* ── Connect action row (Cancel + Exit / Skip + Exit + Ready) */
+/* ── Connect action row ──────────────────────────────────── */
 .connect-action-row {
   display: flex;
   gap: var(--space-2);
@@ -291,21 +353,23 @@ html.light .dash-connect-card {
 
 /* Danger variant for Button */
 .btn-danger {
-  background: var(--error);
+  background: linear-gradient(135deg, #EF4444, #DC2626);
   color: #fff;
-  box-shadow: 0 2px 8px rgba(239,68,68,0.3);
+  box-shadow: 0 2px 12px rgba(239,68,68,0.25);
 }
 .btn-danger:hover:not(:disabled) {
   opacity: 0.88;
 }
 
-/* ── No users available state ─────────────────────────────── */
+/* ── No users available state ────────────────────────────── */
 .connect-no-users {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--space-3);
   width: 100%;
+  position: relative;
+  z-index: 1;
 }
 
 .no-users-icon {
@@ -314,12 +378,12 @@ html.light .dash-connect-card {
 }
 
 .connect-no-users h3 {
-  font-size: var(--text-lg);
+  font-size: 20px;
   font-weight: 700;
 }
 
 .connect-no-users p {
-  font-size: var(--text-sm);
+  font-size: 13px;
   color: var(--text-secondary);
   text-align: center;
   line-height: 1.6;

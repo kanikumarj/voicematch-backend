@@ -1,32 +1,45 @@
+/* ═══════════════════════════════════════════════════════════════
+   FriendsPage — Apple Liquid Fluid Premium Design
+   Glassmorphism + Subtle animations + Clean typography
+   ═══════════════════════════════════════════════════════════════ */
+
 .friends-req-btn {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
-  font-size: var(--text-sm);
+  gap: 4px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--accent-primary);
 }
 
+/* ── Tabs — underline with glow ────────────────────────────── */
 .friends-tabs {
   display: flex;
   padding: 0 var(--space-4);
-  border-bottom: 1px solid var(--border-subtle);
-  background: var(--bg-primary);
+  border-bottom: 0.5px solid rgba(255,255,255,0.06);
+  background: rgba(var(--glass-rgb, 10,10,10), 0.72);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
   position: sticky;
   top: 56px;
   z-index: 10;
 }
 
+html.light .friends-tabs {
+  background: rgba(255,255,255,0.78);
+  border-bottom-color: rgba(0,0,0,0.06);
+}
+
 .friends-tab {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
-  padding: var(--space-3) var(--space-4);
-  font-size: var(--text-sm);
+  gap: 4px;
+  padding: 12px 16px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-muted);
   border-bottom: 2px solid transparent;
-  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
+  transition: all 0.2s ease;
 }
 
 .friends-tab.active {
@@ -34,14 +47,19 @@
   border-bottom-color: var(--accent-primary);
 }
 
+.friends-tab:hover:not(.active) {
+  color: var(--text-secondary);
+}
+
 .friends-content {
   padding: 0;
 }
 
+/* ── Search — frosted glass ──────────────────────────────── */
 .friends-search-wrap {
   position: relative;
-  padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--border-subtle);
+  padding: 10px 16px;
+  border-bottom: 0.5px solid var(--border-subtle);
 }
 
 .search-icon {
@@ -54,49 +72,62 @@
 
 .friends-search {
   width: 100%;
-  padding: var(--space-2) var(--space-4) var(--space-2) 36px;
-  background: var(--bg-tertiary);
-  border: none;
-  border-radius: var(--radius-full);
-  font-size: var(--text-sm);
+  padding: 10px 16px 10px 36px;
+  background: rgba(255,255,255,0.04);
+  border: 0.5px solid rgba(255,255,255,0.06);
+  border-radius: 100px;
+  font-size: 13px;
   color: var(--text-primary);
   outline: none;
+  transition: all 0.2s ease;
 }
 
-/* ── Online Now Section (Instagram style) ────────────────── */
+html.light .friends-search {
+  background: rgba(0,0,0,0.03);
+  border-color: rgba(0,0,0,0.06);
+}
+
+.friends-search:focus {
+  border-color: rgba(124,58,237,0.3);
+  background: rgba(124,58,237,0.03);
+  box-shadow: 0 0 0 3px rgba(124,58,237,0.06);
+}
+
+/* ── Online Now Section — horizontal scroll ──────────────── */
 .online-now-section {
-  padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--border-subtle);
+  padding: 12px 16px;
+  border-bottom: 0.5px solid var(--border-subtle);
 }
 
 .online-now-header {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
 .online-now-label {
-  font-size: var(--text-xs);
+  font-size: 11px;
   font-weight: 700;
   color: var(--text-muted);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .online-now-count {
-  font-size: var(--text-xs);
+  font-size: 11px;
   font-weight: 700;
-  color: var(--online-dot);
-  background: rgba(34, 197, 94, 0.12);
-  padding: 2px 8px;
-  border-radius: var(--radius-full);
+  color: #34D399;
+  background: rgba(52,211,153,0.08);
+  padding: 2px 10px;
+  border-radius: 100px;
 }
 
 .online-now-scroll {
   display: flex;
-  gap: var(--space-4);
+  gap: 16px;
   overflow-x: auto;
-  padding-bottom: var(--space-2);
+  padding-bottom: 8px;
   scrollbar-width: none;
 }
 .online-now-scroll::-webkit-scrollbar { display: none; }
@@ -105,19 +136,19 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-1);
+  gap: 4px;
   flex-shrink: 0;
   background: none;
   cursor: pointer;
-  transition: transform var(--fast) var(--ease);
+  transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1);
 }
 
 .online-now-item:hover {
-  transform: scale(1.05);
+  transform: scale(1.08);
 }
 
 .online-now-name {
-  font-size: var(--text-xs);
+  font-size: 11px;
   color: var(--text-secondary);
   font-weight: 500;
   max-width: 52px;
@@ -126,27 +157,33 @@
   white-space: nowrap;
 }
 
-/* ── All Friends Label ───────────────────────────────────── */
+/* ── All Friends Label ──────────────────────────────────── */
 .all-friends-label {
-  font-size: var(--text-xs);
+  font-size: 11px;
   font-weight: 700;
   color: var(--text-muted);
-  letter-spacing: 0.05em;
-  padding: var(--space-3) var(--space-4) var(--space-1);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 12px 16px 4px;
 }
 
-/* ── Friend item (chat list style) ───────────────────────── */
+/* ── Friend item — clean list with hover glass effect ────── */
 .friend-item {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
+  gap: 12px;
+  padding: 12px 16px;
   cursor: pointer;
-  transition: background var(--fast) var(--ease);
+  transition: all 0.2s ease;
+  border-radius: 0;
 }
 
-.friend-item:hover { background: var(--bg-secondary); }
-.friend-item:active { background: var(--bg-tertiary); }
+.friend-item:hover {
+  background: rgba(124,58,237,0.03);
+}
+.friend-item:active {
+  background: rgba(124,58,237,0.06);
+}
 
 .friend-item-info {
   flex: 1;
@@ -157,13 +194,14 @@
 }
 
 .friend-item-name {
-  font-size: var(--text-base);
+  font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
+  letter-spacing: -0.2px;
 }
 
 .friend-item-last {
-  font-size: var(--text-sm);
+  font-size: 13px;
   color: var(--text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -174,60 +212,76 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 4px;
+  gap: 6px;
   flex-shrink: 0;
 }
 
 .friend-item-time {
-  font-size: var(--text-xs);
+  font-size: 11px;
   color: var(--text-muted);
 }
 
 .friend-call-btn {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  background: var(--bg-tertiary);
+  background: rgba(124,58,237,0.06);
+  border: 0.5px solid rgba(124,58,237,0.1);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-secondary);
-  transition: all var(--fast) var(--ease);
+  color: var(--accent-primary);
+  transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1);
 }
-.friend-call-btn:hover { background: var(--accent-glow); color: var(--accent-primary); }
+.friend-call-btn:hover {
+  background: rgba(124,58,237,0.12);
+  transform: scale(1.08);
+}
 
-/* ── Request Sub-Tabs (Pill Switcher) ───────────────────── */
+/* ── Request Sub-Tabs — Pill switcher ────────────────────── */
 .requests-subtabs {
   display: flex;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--border-subtle);
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 0.5px solid var(--border-subtle);
 }
 
 .requests-subtab {
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-full);
-  font-size: var(--text-sm);
+  padding: 8px 18px;
+  border-radius: 100px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-muted);
-  background: var(--bg-tertiary);
-  border: none;
+  background: rgba(255,255,255,0.04);
+  border: 0.5px solid rgba(255,255,255,0.06);
   cursor: pointer;
-  transition: all var(--fast) var(--ease);
+  transition: all 0.2s ease;
+}
+
+html.light .requests-subtab {
+  background: rgba(0,0,0,0.03);
+  border-color: rgba(0,0,0,0.06);
 }
 
 .requests-subtab.active {
-  background: var(--accent-primary);
+  background: linear-gradient(135deg, #7C3AED, #6D28D9);
   color: white;
+  border-color: transparent;
+  box-shadow: 0 2px 10px rgba(124,58,237,0.25);
 }
 
-/* ── Request Card (Instagram style) ─────────────────────── */
+/* ── Request Card ────────────────────────────────────────── */
 .req-card {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  border-bottom: 1px solid var(--border-subtle);
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 0.5px solid var(--border-subtle);
+  transition: background 0.2s ease;
+}
+
+.req-card:hover {
+  background: rgba(124,58,237,0.02);
 }
 
 .req-card-info {
@@ -238,24 +292,25 @@
 }
 
 .req-card-info strong {
-  font-size: var(--text-base);
+  font-size: 15px;
   color: var(--text-primary);
+  letter-spacing: -0.2px;
 }
 
 .req-card-subtitle {
-  font-size: var(--text-sm);
+  font-size: 13px;
   color: var(--text-secondary);
 }
 
 .req-card-meta {
-  font-size: var(--text-xs);
+  font-size: 11px;
   color: var(--text-muted);
 }
 
 .req-card-actions {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: 8px;
   flex-shrink: 0;
 }
 
@@ -269,45 +324,53 @@
   align-self: center;
 }
 
-/* ── Context Menu ───────────────────────────────────────── */
+/* ── Context Menu — glass dropdown ──────────────────────── */
 .friend-context-menu {
   position: fixed;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
+  background: rgba(var(--glass-rgb, 30,30,30), 0.9);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 0.5px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.4);
   z-index: 200;
-  min-width: 160px;
-  padding: var(--space-1) 0;
+  min-width: 180px;
+  padding: 4px 0;
   overflow: hidden;
+}
+
+html.light .friend-context-menu {
+  background: rgba(255,255,255,0.92);
+  border-color: rgba(0,0,0,0.06);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.12);
 }
 
 .friend-context-menu button {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 10px;
   width: 100%;
-  padding: var(--space-3) var(--space-4);
-  font-size: var(--text-sm);
+  padding: 12px 16px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--text-primary);
   background: none;
   border: none;
   cursor: pointer;
   text-align: left;
-  transition: background var(--fast) var(--ease);
+  transition: background 0.15s ease;
 }
 
 .friend-context-menu button:hover {
-  background: var(--bg-tertiary);
+  background: rgba(124,58,237,0.06);
 }
 
 .friend-context-menu .ctx-danger {
-  color: var(--error);
+  color: #F87171;
 }
 
 .friend-context-menu .ctx-danger:hover {
-  background: rgba(239, 68, 68, 0.1);
+  background: rgba(239,68,68,0.06);
 }
 
 /* ── Empty state ─────────────────────────────────────────── */
@@ -315,21 +378,21 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: var(--space-10) var(--space-4);
-  gap: var(--space-2);
+  padding: 48px 16px;
+  gap: 8px;
   text-align: center;
 }
 
 .friends-empty span { font-size: 48px; margin-bottom: 8px; }
-.friends-empty p:first-of-type { font-size: var(--text-md); font-weight: 600; }
-.friends-empty p:last-of-type  { font-size: var(--text-sm); color: var(--text-secondary); }
+.friends-empty p:first-of-type { font-size: 17px; font-weight: 700; }
+.friends-empty p:last-of-type  { font-size: 13px; color: var(--text-secondary); }
 
-/* ── Pending pill (kept for backward compat) ─────────────── */
+/* ── Pending pill ────────────────────────────────────────── */
 .pending-pill {
-  font-size: var(--text-xs);
+  font-size: 11px;
   color: var(--text-muted);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-full);
+  border: 0.5px solid rgba(255,255,255,0.08);
+  border-radius: 100px;
   padding: 2px 10px;
   white-space: nowrap;
 }
