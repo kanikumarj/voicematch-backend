@@ -111,19 +111,34 @@ app.get('/health', (_req, res) => res.json({
   timestamp: new Date().toISOString(),
 }));
 
+// ─── Debug endpoint (shows which env vars are set, NOT their values) ──────────
+app.get('/api/debug', (_req, res) => res.json({
+  status: 'ok',
+  env: {
+    NODE_ENV: process.env.NODE_ENV || 'not set',
+    VERCEL: process.env.VERCEL || 'not set',
+    DATABASE_URL: process.env.DATABASE_URL ? '✓ SET' : '✗ MISSING',
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID ? '✓ SET' : '✗ MISSING',
+    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET ? '✓ SET' : '✗ MISSING',
+    JWT_SECRET: process.env.JWT_SECRET ? '✓ SET' : '✗ MISSING',
+    REDIS_URL: process.env.REDIS_URL ? '✓ SET' : '✗ MISSING',
+    CLIENT_URL: process.env.CLIENT_URL ? '✓ SET' : '✗ MISSING',
+  }
+}));
+
 // ─── Error handling ───────────────────────────────────────────────────────────
 app.use(notFoundHandler);
 app.use(globalErrorHandler);
 
-// ─── HTTP server + Socket.IO ──────────────────────────────────────────────────
-const httpServer = http.createServer(app);
-const io = initSocketServer(httpServer);
-
-// NEW: [Feature 5] Init announcement system with socket.io instance
-setAnnouncementIO(io);
-startAnnouncementCron(io);
-
+// ─── HTTP server + Socket.IO (skip in serverless mode) ────────────────────────
 if (!process.env.VERCEL) {
+  const httpServer = http.createServer(app);
+  const io = initSocketServer(httpServer);
+
+  // NEW: [Feature 5] Init announcement system with socket.io instance
+  setAnnouncementIO(io);
+  startAnnouncementCron(io);
+
   httpServer.listen(PORT, async () => {
     process.stdout.write(`[SERVER] Listening on port ${PORT}\n`);
     await runStartupCleanup();
@@ -133,3 +148,4 @@ if (!process.env.VERCEL) {
 }
 
 module.exports = app;
+
