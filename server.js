@@ -123,11 +123,13 @@ const io = initSocketServer(httpServer);
 setAnnouncementIO(io);
 startAnnouncementCron(io);
 
-httpServer.listen(PORT, async () => {
-  process.stdout.write(`[SERVER] Listening on port ${PORT}\n`);
-  await runStartupCleanup();
-  // NEW: [Area 2] Start call watchdog — cleans stuck sessions every 5 minutes
-  startCallWatchdog(io);
-});
+if (!process.env.VERCEL) {
+  httpServer.listen(PORT, async () => {
+    process.stdout.write(`[SERVER] Listening on port ${PORT}\n`);
+    await runStartupCleanup();
+    // NEW: [Area 2] Start call watchdog — cleans stuck sessions every 5 minutes
+    startCallWatchdog(io);
+  });
+}
 
 module.exports = app;
