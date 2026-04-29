@@ -1,3 +1,6 @@
+/* ═══════════════════════════════════════════════════════════════
+   Avatar — Premium Gradient Ring + Status Indicators
+   ═══════════════════════════════════════════════════════════════ */
 .avatar {
   position: relative;
   border-radius: 50%;
@@ -6,7 +9,7 @@
   justify-content: center;
   flex-shrink: 0;
   overflow: visible;
-  transition: transform var(--fast) var(--ease);
+  transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
 }
 
 .avatar-img {
@@ -17,47 +20,57 @@
 }
 
 .avatar-initials {
-  font-weight: 700;
+  font-weight: 800;
   color: #fff;
-  letter-spacing: 0.02em;
+  letter-spacing: -0.02em;
   line-height: 1;
   pointer-events: none;
   user-select: none;
 }
 
-/* ── Status ring ─────────────────────────────────────────── */
+/* ── Status ring — glowing rings ─────────────────────────── */
 .avatar.status-online {
-  box-shadow: 0 0 0 2.5px var(--bg-primary), 0 0 0 4.5px var(--online-dot);
+  box-shadow:
+    0 0 0 2.5px var(--bg-primary),
+    0 0 0 4px #34D399;
 }
 
 .avatar.status-in_call {
-  box-shadow: 0 0 0 2.5px var(--bg-primary), 0 0 0 4.5px var(--incall-dot);
+  box-shadow:
+    0 0 0 2.5px var(--bg-primary),
+    0 0 0 4px var(--accent-primary);
   animation: pulse-glow 2s ease-in-out infinite;
 }
 
 .avatar.status-searching {
-  box-shadow: 0 0 0 2.5px var(--bg-primary), 0 0 0 4.5px var(--warning);
+  box-shadow:
+    0 0 0 2.5px var(--bg-primary),
+    0 0 0 4px var(--warning);
   animation: pulse-glow 1.5s ease-in-out infinite;
 }
 
-/* ── Status Dot (small indicator bottom-right) ──────────── */
+/* ── Status Dot — small indicator bottom-right ────────────── */
 .avatar-status-dot {
   position: absolute;
-  bottom: 1px;
-  right: 1px;
-  width: 10px;
-  height: 10px;
+  bottom: 0px;
+  right: 0px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
-  border: 2px solid var(--bg-primary);
+  border: 2.5px solid var(--bg-primary);
+  transition: all 0.3s ease;
 }
 
-.dot-online    { background: var(--online-dot); }
-.dot-offline   { background: var(--offline-dot); }
-.dot-in_call   { background: var(--incall-dot); animation: pulse-glow 2s ease-in-out infinite; }
+.dot-online {
+  background: #34D399;
+  box-shadow: 0 0 6px rgba(52,211,153,0.5);
+}
+.dot-offline   { background: var(--text-muted); opacity: 0.5; }
+.dot-in_call   { background: var(--accent-primary); animation: pulse-glow 2s ease-in-out infinite; }
 .dot-searching { background: var(--warning);   animation: pulse-glow 1.5s ease-in-out infinite; }
 
 /* ── Sizes ── */
 .avatar-sm  { font-size: 11px; }
-.avatar-md  { font-size: 16px; }
+.avatar-md  { font-size: 15px; }
 .avatar-lg  { font-size: 20px; }
 .avatar-xl  { font-size: 28px; }

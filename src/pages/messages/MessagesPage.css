@@ -1,6 +1,6 @@
-/* ============================================================
-   MESSAGES PAGE — Telegram-style conversation list
-   ============================================================ */
+/* ═══════════════════════════════════════════════════════════════
+   MessagesPage — Apple Liquid Fluid Premium
+   ═══════════════════════════════════════════════════════════════ */
 
 .messages-content {
   padding: 0;
@@ -8,12 +8,18 @@
 
 .messages-search-wrap {
   position: relative;
-  padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--border-subtle);
+  padding: 10px 16px;
+  border-bottom: 0.5px solid var(--border-subtle);
   position: sticky;
   top: 56px;
   z-index: 5;
-  background: var(--bg-primary);
+  background: rgba(var(--glass-rgb, 10,10,10), 0.72);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+html.light .messages-search-wrap {
+  background: rgba(255,255,255,0.78);
 }
 
 .messages-search-icon {
@@ -26,30 +32,43 @@
 
 .messages-search {
   width: 100%;
-  padding: var(--space-2) var(--space-4) var(--space-2) 36px;
-  background: var(--bg-tertiary);
-  border: none;
-  border-radius: var(--radius-full);
-  font-size: var(--text-sm);
+  padding: 10px 16px 10px 36px;
+  background: rgba(255,255,255,0.04);
+  border: 0.5px solid rgba(255,255,255,0.06);
+  border-radius: 100px;
+  font-size: 13px;
   color: var(--text-primary);
   outline: none;
+  transition: all 0.2s ease;
+}
+
+html.light .messages-search {
+  background: rgba(0,0,0,0.03);
+  border-color: rgba(0,0,0,0.06);
+}
+
+.messages-search:focus {
+  border-color: rgba(124,58,237,0.3);
+  background: rgba(124,58,237,0.03);
+  box-shadow: 0 0 0 3px rgba(124,58,237,0.06);
 }
 
 /* ── Message Item ─────────────────────────────────────────── */
 .msg-item {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
+  gap: 12px;
+  padding: 12px 16px;
   cursor: pointer;
-  transition: background var(--fast) var(--ease);
+  transition: all 0.2s ease;
 }
 
-.msg-item:hover { background: var(--bg-secondary); }
-.msg-item:active { background: var(--bg-tertiary); }
+.msg-item:hover { background: rgba(124,58,237,0.03); }
+.msg-item:active { background: rgba(124,58,237,0.06); }
 
 .msg-unread {
-  background: var(--accent-glow);
+  background: rgba(124,58,237,0.04);
+  border-left: 3px solid var(--accent-primary);
 }
 
 .msg-item-info {
@@ -61,9 +80,10 @@
 }
 
 .msg-item-name {
-  font-size: var(--text-base);
+  font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
+  letter-spacing: -0.2px;
 }
 
 .msg-unread .msg-item-name {
@@ -71,7 +91,7 @@
 }
 
 .msg-item-preview {
-  font-size: var(--text-sm);
+  font-size: 13px;
   color: var(--text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -82,12 +102,12 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 4px;
+  gap: 6px;
   flex-shrink: 0;
 }
 
 .msg-item-time {
-  font-size: var(--text-xs);
+  font-size: 11px;
   color: var(--text-muted);
 }
 
@@ -101,23 +121,23 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: var(--space-10) var(--space-4);
-  gap: var(--space-3);
+  padding: 48px 16px;
+  gap: 12px;
   text-align: center;
 }
 
 .messages-empty-icon {
   font-size: 56px;
-  margin-bottom: var(--space-2);
+  margin-bottom: 8px;
 }
 
 .messages-empty h3 {
-  font-size: var(--text-lg);
+  font-size: 20px;
   font-weight: 700;
 }
 
 .messages-empty p {
-  font-size: var(--text-sm);
+  font-size: 13px;
   color: var(--text-secondary);
   max-width: 280px;
 }
