@@ -58,7 +58,7 @@ router.get('/google/callback',
     passport.authenticate('google', { session: false }, (err, user, info) => {
       if (err) {
         console.error('Google Auth Database/Server Error:', err.message);
-        return res.redirect(`${getClientUrl()}/login?error=database_connection_failed`);
+        return res.redirect(`${getClientUrl()}/login?error=database_connection_failed&message=${encodeURIComponent(err.message)}`);
       }
       if (!user) {
         return res.redirect(`${getClientUrl()}/login?error=google_auth_failed`);
