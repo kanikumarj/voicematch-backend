@@ -107,6 +107,17 @@
 .anim-scale-pop     { animation: scale-pop var(--slow) var(--spring) both; }
 .anim-pulse-glow    { animation: pulse-glow 2s ease-in-out infinite; }
 
+/* ── Online Status Pulse ─────────────────────────────────── */
+@keyframes pulse-online-dot {
+  0%, 100% { box-shadow: 0 0 4px rgba(52,211,153,0.4); }
+  50%      { box-shadow: 0 0 10px rgba(52,211,153,0.6); }
+}
+
+@keyframes pulse-online {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(52,211,153,0.25); }
+  50%      { box-shadow: 0 0 0 5px rgba(52,211,153,0.1); }
+}
+
 /* NEW: [Feature 5] Announcement Banner Animations */
 @keyframes slideDown {
   from { transform: translateX(-50%) translateY(-100%); opacity: 0; }

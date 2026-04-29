@@ -1,67 +1,54 @@
 // FIX: [Area 4] MessageStatus — Enhanced delivery status ticks
 // Single grey ✓ = sent, Double grey ✓✓ = delivered, Double blue ✓✓ = read
+// Redesigned with SVG checkmarks for crystal-clear visibility on all backgrounds
 
 import React from 'react';
 
+const Tick = ({ color = 'currentColor', size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const DoubleTick = ({ color = 'currentColor', size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M2 8.5L5.5 12L12 4.5" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M8 8.5L11.5 12L18 4.5" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const Clock = ({ color = 'currentColor', size = 12 }) => (
+  <svg width={size} height={size} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="8" cy="8" r="6.5" stroke={color} strokeWidth="1.5" />
+    <path d="M8 4.5V8L10.5 9.5" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 const MessageStatus = ({ status }) => {
   if (status === 'sending') return (
-    <span
-      style={{ color: 'var(--text-muted)', fontSize: '10px', marginLeft: '4px' }}
-      title="Sending..."
-    >
-      ⏱
+    <span className="msg-status msg-status--sending" title="Sending...">
+      <Clock color="rgba(255,255,255,0.45)" />
     </span>
   );
-  
-  // FIX: [Area 4] Single grey tick — sent
+
   if (status === 'sent') return (
-    <span
-      style={{
-        color: 'rgba(255,255,255,0.5)',
-        fontSize: '11px',
-        marginLeft: '4px',
-        letterSpacing: '-2px',
-      }}
-      title="Sent"
-    >
-      ✓
+    <span className="msg-status msg-status--sent" title="Sent">
+      <Tick color="rgba(255,255,255,0.55)" />
     </span>
   );
-  
-  // FIX: [Area 4] Double grey tick — delivered
+
   if (status === 'delivered') return (
-    <span
-      style={{
-        color: 'rgba(255,255,255,0.5)',
-        fontSize: '11px',
-        marginLeft: '4px',
-        letterSpacing: '-4px',
-        display: 'inline-flex',
-        alignItems: 'center',
-      }}
-      title="Delivered"
-    >
-      <span>✓</span><span>✓</span>
+    <span className="msg-status msg-status--delivered" title="Delivered">
+      <DoubleTick color="rgba(255,255,255,0.55)" />
     </span>
   );
-  
-  // FIX: [Area 4] Double BLUE tick — read
+
   if (status === 'read') return (
-    <span
-      style={{
-        color: '#60A5FA', // bright blue — visible on dark + light theme
-        fontSize: '11px',
-        marginLeft: '4px',
-        letterSpacing: '-4px',
-        display: 'inline-flex',
-        alignItems: 'center',
-      }}
-      title="Read"
-    >
-      <span>✓</span><span>✓</span>
+    <span className="msg-status msg-status--read" title="Read">
+      <DoubleTick color="#34D399" />
     </span>
   );
-  
+
   return null;
 };
 

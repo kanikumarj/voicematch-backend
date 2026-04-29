@@ -291,10 +291,47 @@ export default function ChatPage() {
     }, 3000);
   }
 
+  const [calling, setCalling] = useState(false);
+
+  // Listen for direct call events while on this page
+  useEffect(() => {
+    let socket;
+    try { socket = getSocket(); } catch { return; }
+    if (!socket) return;
+
+    const onRinging = () => setCalling(true);
+    const onAccepted = () => setCalling(false);
+    const onRejected = () => { setCalling(false); toast.info('Call declined'); };
+    const onMissed = () => { setCalling(false); toast.info('No answer'); };
+    const onBusy = () => { setCalling(false); toast.info('Friend is busy'); };
+    const onOffline = () => { setCalling(false); toast.info('Friend is offline'); };
+    const onError = ({ message }) => { setCalling(false); toast.error(message || 'Call failed'); };
+
+    socket.on('direct_call_ringing', onRinging);
+    socket.on('direct_call_accepted', onAccepted);
+    socket.on('direct_call_rejected', onRejected);
+    socket.on('direct_call_missed', onMissed);
+    socket.on('friend_busy', onBusy);
+    socket.on('friend_offline', onOffline);
+    socket.on('direct_call_error', onError);
+
+    return () => {
+      socket.off('direct_call_ringing', onRinging);
+      socket.off('direct_call_accepted', onAccepted);
+      socket.off('direct_call_rejected', onRejected);
+      socket.off('direct_call_missed', onMissed);
+      socket.off('friend_busy', onBusy);
+      socket.off('friend_offline', onOffline);
+      socket.off('direct_call_error', onError);
+    };
+  }, [toast]);
+
   function callFriend() {
     if (!friendInfo?.id) return toast.error('Friend info not loaded yet');
+    if (calling) return;
     try {
       getSocket().emit('direct_call_request', { toUserId: friendInfo.id });
+      setCalling(true);
       toast.info('Calling ' + friendName + '…');
     } catch {
       toast.error('Connection error');
@@ -371,11 +408,27 @@ export default function ChatPage() {
           🎵
         </button>
 
-        {/* FIX: [Area 5] Call button */}
-        <button className="chat-call-btn" onClick={callFriend} aria-label="Voice call">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.41 2 2 0 0 1 3.6 1.24h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81a16 16 0 0 0 5.95 5.95l.87-.87a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
-          </svg>
+        {/* FIX: [Area 5] Call button — shows ringing animation during call */}
+        <button
+          className="chat-call-btn"
+          onClick={callFriend}
+          aria-label="Voice call"
+          style={calling ? {
+            background: 'rgba(52,211,153,0.15)',
+            borderColor: 'rgba(52,211,153,0.3)',
+            color: '#34D399',
+            animation: 'pulse-online 1.5s ease-in-out infinite',
+          } : {}}
+        >
+          {calling ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ animation: 'spin-ring 2s linear infinite' }}>
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.41 2 2 0 0 1 3.6 1.24h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81a16 16 0 0 0 5.95 5.95l.87-.87a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+            </svg>
+          ) : (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.41 2 2 0 0 1 3.6 1.24h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81a16 16 0 0 0 5.95 5.95l.87-.87a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+            </svg>
+          )}
         </button>
       </header>
 

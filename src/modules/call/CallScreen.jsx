@@ -214,10 +214,10 @@ export default function CallScreen({ socket, token, partnerName, isInitiator, pa
 
         {isConnected && (
           <div className="call-waveform">
-            {[...Array(12)].map((_, i) => (
+            {[...Array(20)].map((_, i) => (
               <div key={i} className="viz-bar" style={{
-                animationDelay: `${i * 0.07}s`,
-                animationDuration: `${0.6 + (i % 3) * 0.2}s`
+                animationDelay: `${i * 0.06}s`,
+                animationDuration: `${0.5 + (i % 4) * 0.15}s`
               }} />
             ))}
           </div>

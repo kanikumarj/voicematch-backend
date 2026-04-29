@@ -1,5 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════
-   CallScreen CSS — works on BOTH light & dark themes
+   CallScreen CSS — Premium Liquid Fluid Design
+   Apple-style glassmorphism + Dynamic waveform + Ambient glow
    ═══════════════════════════════════════════════════════════════ */
 
 /* ── Base screen ── */
@@ -8,11 +9,31 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 100%;          /* CRITICAL — must fill parent width */
+  width: 100%;
   min-height: 100dvh;
-  background: var(--bg-primary);
+  background: #050510;
   overflow: hidden;
   box-sizing: border-box;
+}
+
+/* Ambient gradient background — living, breathing UI */
+.call-screen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 20%, rgba(124,58,237,0.15) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 20% 80%, rgba(59,130,246,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 80% 70%, rgba(168,85,247,0.06) 0%, transparent 60%);
+  animation: ambient-bg-shift 12s ease-in-out infinite alternate;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes ambient-bg-shift {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+  100% { opacity: 1; transform: scale(1); }
 }
 
 .call-screen--partner-left,
@@ -24,76 +45,131 @@
 }
 
 /* ── Status indicators ── */
-.call-status-icon { font-size: 56px; }
-.call-status-title { color: var(--text-primary); font-size: 22px; font-weight: 700; }
-.call-status-subtitle { color: var(--text-secondary); font-size: 14px; }
+.call-status-icon { font-size: 56px; z-index: 1; }
+.call-status-title { color: #F9FAFB; font-size: 22px; font-weight: 700; z-index: 1; }
+.call-status-subtitle { color: #9CA3AF; font-size: 14px; z-index: 1; }
 
 .call-spinner {
   width: 36px; height: 36px;
-  border: 3px solid var(--accent-primary);
+  border: 3px solid rgba(124,58,237,0.6);
   border-top-color: transparent;
   border-radius: 50%;
   animation: spin-ring 0.8s linear infinite;
+  z-index: 1;
 }
 
-/* ── Avatar ── */
+/* ── Avatar — Glowing ring ── */
 .call-avatar {
-  width: 96px; height: 96px;
+  width: 110px; height: 110px;
   border-radius: 50%;
-  background: var(--accent-primary);
+  background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 50%, #5B21B6 100%);
   display: flex; align-items: center; justify-content: center;
-  color: #fff; font-weight: 800; font-size: 38px;
-  transition: all 0.4s;
+  color: #fff; font-weight: 800; font-size: 42px;
+  transition: all 0.5s cubic-bezier(0.34,1.56,0.64,1);
+  z-index: 1;
+  position: relative;
 }
+
 .call-avatar--pulsing {
-  animation: pulse-ring 2s infinite;
-  box-shadow: 0 0 0 16px rgba(124,58,237,0.15);
+  animation: avatar-pulse 2.5s ease-in-out infinite;
 }
+
 .call-avatar--connected {
   box-shadow:
-    0 0 0 12px rgba(124,58,237,0.15),
-    0 0 0 24px rgba(124,58,237,0.07);
+    0 0 0 8px rgba(124,58,237,0.12),
+    0 0 0 20px rgba(124,58,237,0.06),
+    0 0 40px rgba(124,58,237,0.2);
+}
+
+@keyframes avatar-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 0px rgba(124,58,237,0.4),
+      0 0 0 0px rgba(124,58,237,0.2),
+      0 0 20px rgba(124,58,237,0.1);
+  }
+  50% {
+    box-shadow:
+      0 0 0 14px rgba(124,58,237,0.15),
+      0 0 0 28px rgba(124,58,237,0.05),
+      0 0 40px rgba(124,58,237,0.15);
+  }
 }
 
 /* ── Partner name ── */
 .call-partner-name {
-  color: var(--text-primary);
-  font-size: 26px; font-weight: 700;
-  margin: 0; letter-spacing: -0.3px;
+  color: #F9FAFB;
+  font-size: 28px; font-weight: 700;
+  margin: 0; letter-spacing: -0.5px;
   text-align: center;
+  z-index: 1;
 }
 
 /* ── Timer ── */
 .call-timer {
-  display: flex; align-items: center; gap: 6px;
-  color: var(--text-muted);
+  display: flex; align-items: center; gap: 8px;
+  color: rgba(255,255,255,0.45);
   font-size: 15px; font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  z-index: 1;
 }
 .call-timer--live { color: #EF4444; }
 .call-timer-dot {
   width: 8px; height: 8px; border-radius: 50%;
   background: #EF4444;
-  animation: pulse-dot 1s infinite;
+  animation: pulse-dot 1.2s ease-in-out infinite;
+  box-shadow: 0 0 8px rgba(239,68,68,0.5);
 }
 
 /* ── Pool stat ── */
 .call-pool-stat {
-  color: var(--text-muted); font-size: 12px;
+  color: rgba(255,255,255,0.35); font-size: 12px; z-index: 1;
 }
 
-/* ── Waveform ── */
+/* ── Waveform — Premium audio visualization ── */
 .call-waveform {
-  display: flex; align-items: center; gap: 4px;
-  height: 48px; margin-top: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 64px;
+  margin-top: 20px;
+  z-index: 1;
+  padding: 0 20px;
 }
+
 .viz-bar {
-  width: 4px;
-  background: var(--accent-primary);
-  border-radius: 2px;
-  opacity: 0.7;
+  width: 3px;
+  border-radius: 100px;
   animation-name: wave-bar;
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
+  position: relative;
+}
+
+/* Gradient bars — each bar has a slightly different hue */
+.viz-bar:nth-child(1)  { background: linear-gradient(to top, #7C3AED, #A78BFA); }
+.viz-bar:nth-child(2)  { background: linear-gradient(to top, #6D28D9, #8B5CF6); }
+.viz-bar:nth-child(3)  { background: linear-gradient(to top, #7C3AED, #C4B5FD); }
+.viz-bar:nth-child(4)  { background: linear-gradient(to top, #5B21B6, #A78BFA); }
+.viz-bar:nth-child(5)  { background: linear-gradient(to top, #7C3AED, #818CF8); }
+.viz-bar:nth-child(6)  { background: linear-gradient(to top, #6D28D9, #A78BFA); }
+.viz-bar:nth-child(7)  { background: linear-gradient(to top, #7C3AED, #C4B5FD); }
+.viz-bar:nth-child(8)  { background: linear-gradient(to top, #5B21B6, #8B5CF6); }
+.viz-bar:nth-child(9)  { background: linear-gradient(to top, #7C3AED, #A78BFA); }
+.viz-bar:nth-child(10) { background: linear-gradient(to top, #6D28D9, #818CF8); }
+.viz-bar:nth-child(11) { background: linear-gradient(to top, #7C3AED, #C4B5FD); }
+.viz-bar:nth-child(12) { background: linear-gradient(to top, #5B21B6, #A78BFA); }
+
+/* Glow effect on each bar */
+.viz-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  filter: blur(4px);
+  opacity: 0.4;
+  background: inherit;
 }
 
 /* ── Top bar ── */
@@ -108,17 +184,24 @@
 .call-topbar-btn {
   width: 40px !important; height: 40px !important;
   border-radius: 50%;
-  background: var(--bg-tertiary) !important;
-  border: 1px solid var(--border-default) !important;
+  background: rgba(255,255,255,0.06) !important;
+  border: 0.5px solid rgba(255,255,255,0.1) !important;
+  backdrop-filter: blur(12px);
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  color: var(--text-primary); font-size: 20px;
+  color: #F9FAFB; font-size: 20px;
+  transition: all 0.2s ease;
 }
+.call-topbar-btn:hover {
+  background: rgba(255,255,255,0.12) !important;
+}
+
 .call-reported-badge {
   padding: 8px 14px; border-radius: 20px;
-  background: rgba(16,185,129,0.12);
-  border: 1px solid rgba(16,185,129,0.3);
-  color: #10B981; font-size: 13px; font-weight: 600;
+  background: rgba(16,185,129,0.1);
+  border: 0.5px solid rgba(16,185,129,0.2);
+  backdrop-filter: blur(12px);
+  color: #34D399; font-size: 13px; font-weight: 600;
 }
 
 /* ── Center section ── */
@@ -127,16 +210,20 @@
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   padding-top: 80px;
-  padding-bottom: 240px;
+  padding-bottom: 260px;
   gap: 12px;
 }
 
-/* ── Bottom controls ── */
+/* ── Bottom controls — glass panel ── */
 .call-controls {
   position: absolute; bottom: 0; left: 0; right: 0;
   padding: 20px 24px;
   padding-bottom: max(28px, env(safe-area-inset-bottom));
-  background: linear-gradient(to top, var(--bg-primary) 80%, transparent);
+  background: linear-gradient(to top,
+    rgba(5,5,16,0.95) 0%,
+    rgba(5,5,16,0.7) 60%,
+    transparent 100%
+  );
   display: flex; flex-direction: column;
   align-items: center; gap: 20px;
   z-index: 10;
@@ -156,72 +243,83 @@
   justify-content: center;
 }
 
-/* ── Control button base ── */
+/* ── Control button — glassmorphism ── */
 .call-ctrl-group {
   display: flex; flex-direction: column;
-  align-items: center; gap: 5px;
+  align-items: center; gap: 6px;
 }
 
 .call-ctrl-btn {
   width: 64px !important; height: 64px !important;
   border-radius: 50% !important;
-  background: var(--bg-tertiary) !important;
-  border: 1px solid var(--border-default) !important;
-  color: var(--text-primary);
+  background: rgba(255,255,255,0.06) !important;
+  border: 0.5px solid rgba(255,255,255,0.1) !important;
+  color: #F9FAFB;
   font-size: 24px;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  backdrop-filter: blur(8px);
-  transition: all 0.2s;
+  backdrop-filter: blur(12px);
+  transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1);
 }
 .call-ctrl-btn:hover {
-  background: var(--bg-elevated) !important;
-  transform: scale(1.05);
+  background: rgba(255,255,255,0.12) !important;
+  transform: scale(1.06);
+}
+.call-ctrl-btn:active {
+  transform: scale(0.94) !important;
 }
 
 /* Danger variant (muted) */
 .call-ctrl-btn--danger {
-  background: rgba(239,68,68,0.15) !important;
-  border: 1px solid rgba(239,68,68,0.3) !important;
-  color: #EF4444;
+  background: rgba(239,68,68,0.12) !important;
+  border: 0.5px solid rgba(239,68,68,0.25) !important;
+  color: #F87171;
 }
 
-/* End call — big red */
+/* End call — big red with glow */
 .call-ctrl-btn--end {
   width: 72px !important; height: 72px !important;
-  background: #DC2626 !important;
+  background: linear-gradient(135deg, #DC2626, #B91C1C) !important;
   border: none !important;
   color: #fff;
   font-size: 26px;
-  box-shadow: 0 4px 24px rgba(220,38,38,0.45);
+  box-shadow:
+    0 4px 24px rgba(220,38,38,0.4),
+    0 0 0 4px rgba(220,38,38,0.1);
 }
 .call-ctrl-btn--end:hover {
-  background: #B91C1C !important;
+  background: linear-gradient(135deg, #EF4444, #DC2626) !important;
+  box-shadow:
+    0 6px 32px rgba(220,38,38,0.5),
+    0 0 0 6px rgba(220,38,38,0.15);
 }
 .call-ctrl-btn--end:active {
-  transform: scale(0.94) !important;
+  transform: scale(0.92) !important;
 }
 
 .call-ctrl-label {
-  color: var(--text-secondary);
+  color: rgba(255,255,255,0.5);
   font-size: 11px; font-weight: 500;
 }
 .call-ctrl-label--end {
-  color: #DC2626; font-weight: 600;
+  color: #F87171; font-weight: 600;
 }
 
 /* ── Rating card ── */
 .call-rating-card {
-  background: var(--bg-elevated);
-  padding: 32px; border-radius: 16px;
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(24px);
+  border: 0.5px solid rgba(255,255,255,0.1);
+  padding: 32px; border-radius: 24px;
   width: 100%; max-width: 400px; text-align: center;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+  z-index: 1;
 }
 .call-rating-title {
-  color: var(--text-primary); margin: 0 0 8px;
+  color: #F9FAFB; margin: 0 0 8px; font-size: 22px; font-weight: 700;
 }
 .call-rating-subtitle {
-  color: var(--text-muted); margin-bottom: 24px;
+  color: #9CA3AF; margin-bottom: 24px; font-size: 14px;
 }
 .call-rating-stars {
   display: flex; justify-content: center; gap: 12px; margin-bottom: 32px;
@@ -229,28 +327,38 @@
 .call-star-btn {
   background: none !important; border: none !important;
   font-size: 40px; cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1);
 }
+.call-star-btn:hover { transform: scale(1.15); }
 .call-rating-actions {
   display: flex; gap: 12px;
 }
 .call-btn-secondary {
-  flex: 1; padding: 12px;
-  background: var(--bg-secondary) !important;
-  border: 1px solid var(--border-default) !important;
-  border-radius: var(--radius-md);
-  color: var(--text-secondary); cursor: pointer; font-size: 15px;
+  flex: 1; padding: 14px;
+  background: rgba(255,255,255,0.06) !important;
+  border: 0.5px solid rgba(255,255,255,0.1) !important;
+  border-radius: 14px;
+  color: #9CA3AF; cursor: pointer; font-size: 15px;
+  transition: all 0.2s ease;
 }
+.call-btn-secondary:hover { background: rgba(255,255,255,0.1) !important; }
 .call-btn-primary {
-  flex: 2; padding: 12px;
-  background: var(--accent-primary) !important;
+  flex: 2; padding: 14px;
+  background: linear-gradient(135deg, #7C3AED, #6D28D9) !important;
   border: none !important;
-  border-radius: var(--radius-md);
+  border-radius: 14px;
   color: #fff; cursor: pointer; font-size: 15px; font-weight: 600;
+  box-shadow: 0 4px 16px rgba(124,58,237,0.3);
+  transition: all 0.2s ease;
+}
+.call-btn-primary:hover {
+  box-shadow: 0 6px 24px rgba(124,58,237,0.4);
+  transform: translateY(-1px);
 }
 .call-btn-primary:disabled {
-  background: var(--bg-tertiary) !important;
-  color: var(--text-muted);
+  background: rgba(255,255,255,0.06) !important;
+  color: #6B7280;
+  box-shadow: none;
 }
 
 /* ═══════ ANIMATIONS ═══════ */
@@ -263,12 +371,12 @@
   100% { box-shadow: 0 0 0 0 rgba(124,58,237,0); }
 }
 @keyframes pulse-dot {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(0.8); }
 }
 @keyframes wave-bar {
-  0%, 100% { height: 4px; }
-  50% { height: 28px; }
+  0%, 100% { height: 4px; opacity: 0.4; }
+  50% { height: 36px; opacity: 1; }
 }
 @keyframes slide-up {
   from { transform: translateX(-50%) translateY(20px); opacity: 0; }
@@ -276,56 +384,18 @@
 }
 
 /* ═══════ RESPONSIVE ═══════ */
-
-/* Desktop: full-width background, content centered in a comfortable column */
 @media (min-width: 768px) {
-  .call-screen {
-    width: 100%;
-    /* NO max-width — it breaks absolute positioning */
-  }
-
-  /* Center the avatar+name+timer content */
-  .call-center {
-    max-width: 480px;
-    width: 100%;
-  }
-
-  /* Keep controls full-width so they span edge-to-edge */
-  .call-controls {
-    left: 0; right: 0;
-    max-width: 100%;
-  }
-
-  /* Scale up avatar on desktop */
-  .call-avatar {
-    width: 120px;
-    height: 120px;
-    font-size: 48px;
-  }
-
-  .call-partner-name {
-    font-size: 32px;
-  }
-
-  /* Larger buttons on desktop */
-  .call-ctrl-btn {
-    width: 72px !important;
-    height: 72px !important;
-    font-size: 26px;
-  }
-  .call-ctrl-btn--end {
-    width: 80px !important;
-    height: 80px !important;
-  }
-
-  /* Wider control rows */
+  .call-screen { width: 100%; }
+  .call-center { max-width: 480px; width: 100%; }
+  .call-controls { left: 0; right: 0; max-width: 100%; }
+  .call-avatar { width: 130px; height: 130px; font-size: 52px; }
+  .call-partner-name { font-size: 34px; }
+  .call-ctrl-btn { width: 72px !important; height: 72px !important; font-size: 26px; }
+  .call-ctrl-btn--end { width: 80px !important; height: 80px !important; }
   .call-controls-primary { gap: 36px; }
   .call-controls-secondary { gap: 40px; }
-
-  /* Topbar max-width */
-  .call-topbar {
-    max-width: 100%;
-  }
+  .call-topbar { max-width: 100%; }
+  .viz-bar { width: 4px; }
 }
 
 /* Small phones */
