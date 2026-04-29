@@ -47,18 +47,31 @@ router.get('/google',
   })
 );
 
+const getClientUrl = () => {
+  if (process.env.CLIENT_URL) return process.env.CLIENT_URL;
+  if (process.env.NODE_ENV === 'production' || process.env.VERCEL) return 'https://voicematchi-backend.vercel.app';
+  return 'http://localhost:5173';
+};
+
 router.get('/google/callback',
-  passport.authenticate('google', {
-    session: false,
-    failureRedirect: `${process.env.CLIENT_URL || 'http://localhost:5173'}/login?error=google`
-  }),
+  (req, res, next) => {
+    passport.authenticate('google', {
+      session: false,
+      failureRedirect: `${getClientUrl()}/login?error=google`
+    })(req, res, next);
+  },
   (req, res) => {
-    const token = jwt.sign(
-      { id: req.user.id, email: req.user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-    );
-    res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5173'}/auth/callback?token=${token}`);
+    try {
+      const token = jwt.sign(
+        { id: req.user.id, email: req.user.email },
+        process.env.JWT_SECRET || 'dev-super-secret-jwt-key-voicematch-2024-change-in-prod',
+        { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+      );
+      res.redirect(`${getClientUrl()}/auth/callback?token=${token}`);
+    } catch (err) {
+      console.error('Google Callback Error:', err);
+      res.redirect(`${getClientUrl()}/login?error=server_error`);
+    }
   }
 );
 
